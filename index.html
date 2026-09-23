@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pizarra Digital - UdeA - Docente: Hernán Quiroz</title>
+    <title>Pizarra Digital - UdeA - Ing. Hernán Quiroz</title>
     <!-- Librería matemática para el graficador -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
     <style>
@@ -24,7 +24,7 @@
             font-family: 'Segoe UI', sans-serif;
             touch-action: none; 
             overscroll-behavior: none;
-            user-select: none; /* Evita selección de texto */
+            user-select: none;
         }
 
         /* --- PANTALLA DE INICIO UdeA (1 MINUTO) --- */
@@ -35,18 +35,8 @@
             align-items: center; justify-content: center;
             z-index: 1000; transition: opacity 2s ease-in-out;
         }
-        #splash img { width: 40vh; height: auto; margin-bottom: 4vh; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
-        #splash h1 { color: white; font-size: 4vh; margin: 0; text-align: center; }
-        #splash h2 { color: var(--udea-gold); font-size: 2.5vh; margin: 2vh 0 0 0; text-align: center; font-weight: normal; }
-        #splash .credit { position: absolute; bottom: 5vh; color: #ecf0f1; font-size: 2vh; }
-
-        /* --- APLICACIÓN PRINCIPAL --- */
-        #app { display: flex; height: 100vh; width: 100vw; }
-
-        #pizarra {
-            flex-grow: 1; background-color: var(--board-bg);
-            touch-action: none; cursor: crosshair;
-        }
+        #splash img { width: 40vh; height: auto; margin-bottom: 4vh; }
+        #splash .credit { position: absolute; bottom: 5vh; color: #ecf0f1; font-size: 2.5vh; text-align: center; }
 
         /* --- PROTECCIÓN ANTI-DEVTOOLS --- */
         #securityBlock {
@@ -56,24 +46,35 @@
             font-size: 3vh; text-align: center; padding: 5vh;
         }
 
-        /* --- PERSIANA LATERAL --- */
+        /* --- APLICACIÓN PRINCIPAL --- */
+        #app { display: block; height: 100vh; width: 100vw; position: relative; }
+
+        #pizarra {
+            background-color: var(--board-bg);
+            touch-action: none; cursor: crosshair;
+            display: block; width: 100%; height: 100%;
+        }
+
+        /* --- PERSIANA LATERAL (Corregida) --- */
         #persiana {
+            position: fixed; right: 0; top: 0;
             width: 25vh; min-width: 250px; height: 100vh;
             background: var(--toolbar-bg);
             display: flex; flex-direction: column;
             padding: 2vh; gap: 3vh; box-sizing: border-box;
             transform: translateX(100%); /* Oculta por defecto a la derecha */
-            transition: transform 0.3s ease; z-index: 50;
+            transition: transform 0.3s ease; z-index: 100;
             align-items: center;
-            overflow-y: auto;
+            overflow: visible; 
         }
         #persiana.open { transform: translateX(0); }
 
         #toggleArrow {
-            position: absolute; left: -5vh; top: 50%; transform: translateY(-50%);
-            width: 5vh; height: 10vh; background: var(--toolbar-bg);
-            border-radius: 10px 0 0 10px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 3vh; color: white;
+            position: absolute; left: -6vh; top: 50%; transform: translateY(-50%);
+            width: 6vh; height: 12vh; background: var(--toolbar-bg);
+            border-radius: 15px 0 0 15px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 4vh; color: white;
+            box-shadow: -5px 0 5px rgba(0,0,0,0.3);
         }
 
         .tool-group { display: flex; flex-direction: column; gap: 1vh; align-items: center; width: 100%; }
@@ -104,7 +105,7 @@
             display: none; position: fixed; top: 5vh; right: 5vh;
             width: 40vw; height: 80vh; background: #222;
             border: 0.5vh solid var(--udea-gold); border-radius: 1.5vh;
-            flex-direction: column; z-index: 100; overflow: hidden;
+            flex-direction: column; z-index: 200; overflow: hidden;
         }
         .modal-header { padding: 1.5vh; display: flex; justify-content: space-between; color: white; font-size: 2vh; }
         .close-btn { background: transparent; border: none; color: white; font-size: 3vh; cursor: pointer; }
@@ -127,7 +128,6 @@
         #graphCanvas { background: #fff; width: 100%; height: 50vh; }
         #equationDisplay { color: var(--graph-color); font-size: 2vh; text-align: center; padding: 1vh; background: #eee; }
 
-        /* Modo descanso visual */
         .eye-care-active { background-color: #f4e1c1 !important; }
     </style>
 </head>
@@ -136,9 +136,7 @@
     <!-- PANTALLA INICIO UdeA -->
     <div id="splash">
         <img src="logo-udea.png" alt="UdeA">
-        <h1>Universidad de Antioquia</h1>
-        <h2>Facultad de Educación</h2>
-        <div class="credit">Diseñado por Docente: Hernán Quiroz</div>
+        <div class="credit">Pizarra diseñada por Ing. Hernán Quiroz</div>
     </div>
 
     <!-- BLOQUEO ANTI-INSPECCION -->
@@ -166,7 +164,7 @@
             <div class="tool-group">
                 <div class="tool-label">Grosor</div>
                 <div class="sizes">
-                    <button class="size-btn active" data-size="3"><div class="size-dot" style="w:1vh;h:1vh;width:1vh;height:1vh;"></div></button>
+                    <button class="size-btn active" data-size="3"><div class="size-dot" style="width:1vh;height:1vh;"></div></button>
                     <button class="size-btn" data-size="8"><div class="size-dot" style="width:2vh;height:2vh;"></div></button>
                     <button class="size-btn" data-size="18"><div class="size-dot" style="width:3vh;height:3vh;"></div></button>
                 </div>
@@ -182,7 +180,7 @@
                 <button class="action-btn" id="fullscreenBtn">Pantalla Completa</button>
             </div>
 
-            <div class="credit-text">Diseñado por Docente: Hernán Quiroz</div>
+            <div class="credit-text">Pizarra diseñada por Ing. Hernán Quiroz</div>
         </div>
     </div>
 
@@ -218,17 +216,13 @@
                 return false;
             }
         });
-        const devtoolsOpen = /./;
-        devtoolsOpen.toString = function() {
-            document.getElementById('securityBlock').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        };
         setInterval(function() {
             const before = new Date();
             debugger;
             const after = new Date();
-            if (after - before > 100) { // Tiempo anormal = Devtools abiertas
+            if (after - before > 100) { 
                 document.getElementById('securityBlock').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
             }
         }, 1000);
 
@@ -249,7 +243,7 @@
         let startX = 0, startY = 0, savedImage = null;
 
         function resizeCanvas() {
-            const p = canvas.parentElement.getBoundingClientRect();
+            const p = document.getElementById('app').getBoundingClientRect();
             canvas.width = p.width; canvas.height = p.height;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         }
@@ -262,7 +256,6 @@
             else if (forceOpen === false) p.classList.remove('open');
             else p.classList.toggle('open');
             document.getElementById('toggleArrow').innerText = p.classList.contains('open') ? '▶' : '◀';
-            setTimeout(resizeCanvas, 300);
         }
         document.getElementById('toggleArrow').addEventListener('pointerdown', () => togglePersiana());
 
@@ -295,7 +288,7 @@
         });
         document.getElementById('aiBtn').addEventListener('pointerup', () => openModal('aiWindow'));
         document.getElementById('webcamBtn').addEventListener('pointerup', () => {
-            document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA Hernandez Quiroz";
+            document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA_Hernan_Quiroz";
             openModal('webcamWindow');
         });
 
@@ -404,7 +397,7 @@
                     if(transcript.includes('pantalla completa')) { document.documentElement.requestFullscreen(); isCmdActive=false; }
                 }
             };
-            rec.onend = () => { if(!document.getElementById('securityBlock').style.display.includes('flex')) rec.start(); };
+            rec.onend = () => { if(document.getElementById('securityBlock').style.display !== 'flex') rec.start(); };
             rec.start();
         }
     </script>
