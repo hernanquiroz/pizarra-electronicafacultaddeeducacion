@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pizarra Digital - UdeA - Docente: Hernán Quiroz</title>
+    <!-- Librería matemática para el graficador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
+    <style>
+        :root {
+            --udea-green: #006633;
+            --udea-gold: #FFD700;
+            --bg-color: #1a1a1a;
+            --board-bg: #fafafa;
+            --toolbar-bg: #2c3e50;
+            --ai-color: #8e44ad;
+            --graph-color: #16a085;
+        }
+
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', sans-serif;
+            touch-action: none; 
+            overscroll-behavior: none;
+            user-select: none; /* Evita selección de texto */
+        }
+
+        /* --- PANTALLA DE INICIO UdeA (1 MINUTO) --- */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--udea-green);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 2s ease-in-out;
+        }
+        #splash img { width: 40vh; height: auto; margin-bottom: 4vh; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
+        #splash h1 { color: white; font-size: 4vh; margin: 0; text-align: center; }
+        #splash h2 { color: var(--udea-gold); font-size: 2.5vh; margin: 2vh 0 0 0; text-align: center; font-weight: normal; }
+        #splash .credit { position: absolute; bottom: 5vh; color: #ecf0f1; font-size: 2vh; }
+
+        /* --- APLICACIÓN PRINCIPAL --- */
+        #app { display: flex; height: 100vh; width: 100vw; }
+
+        #pizarra {
+            flex-grow: 1; background-color: var(--board-bg);
+            touch-action: none; cursor: crosshair;
+        }
+
+        /* --- PROTECCIÓN ANTI-DEVTOOLS --- */
+        #securityBlock {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: #000; color: #fff; z-index: 9999;
+            display: none; align-items: center; justify-content: center;
+            font-size: 3vh; text-align: center; padding: 5vh;
+        }
+
+        /* --- PERSIANA LATERAL --- */
+        #persiana {
+            width: 25vh; min-width: 250px; height: 100vh;
+            background: var(--toolbar-bg);
+            display: flex; flex-direction: column;
+            padding: 2vh; gap: 3vh; box-sizing: border-box;
+            transform: translateX(100%); /* Oculta por defecto a la derecha */
+            transition: transform 0.3s ease; z-index: 50;
+            align-items: center;
+            overflow-y: auto;
+        }
+        #persiana.open { transform: translateX(0); }
+
+        #toggleArrow {
+            position: absolute; left: -5vh; top: 50%; transform: translateY(-50%);
+            width: 5vh; height: 10vh; background: var(--toolbar-bg);
+            border-radius: 10px 0 0 10px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 3vh; color: white;
+        }
+
+        .tool-group { display: flex; flex-direction: column; gap: 1vh; align-items: center; width: 100%; }
+        .tool-label { color: #ecf0f1; font-size: 1.8vh; text-transform: uppercase; }
+
+        .colors { display: flex; gap: 1vh; justify-content: center; flex-wrap: wrap; }
+        .color-btn { width: 5vh; height: 5vh; border-radius: 50%; border: 0.4vh solid #ecf0f1; cursor: pointer; }
+        .color-btn.active { border-color: var(--udea-gold); transform: scale(1.1); }
+
+        .sizes { display: flex; gap: 1vh; }
+        .size-btn { background: #ecf0f1; border: none; border-radius: 1vh; width: 6vh; height: 6vh; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .size-btn.active { background: var(--udea-gold); }
+        .size-dot { background: #2c3e50; border-radius: 50%; }
+
+        .action-btn { width: 100%; padding: 1.5vh; font-size: 1.8vh; border: none; border-radius: 1vh; color: white; cursor: pointer; font-weight: bold; }
+        #eraserBtn { background: #2980b9; } #eraserBtn.active { background: #e74c3c; }
+        #clearBtn { background: #c0392b; }
+        #fullscreenBtn { background: #27ae60; }
+        #eyeCareBtn { background: #d35400; }
+        #aiBtn { background: var(--ai-color); }
+        #graphBtn { background: var(--graph-color); }
+        #webcamBtn { background: #2c3e50; }
+
+        .credit-text { margin-top: auto; color: #7f8c8d; font-size: 1.5vh; text-align: center; }
+
+        /* --- VENTANAS MODALES (AI, GRAFICO, CAMARA) --- */
+        .modal {
+            display: none; position: fixed; top: 5vh; right: 5vh;
+            width: 40vw; height: 80vh; background: #222;
+            border: 0.5vh solid var(--udea-gold); border-radius: 1.5vh;
+            flex-direction: column; z-index: 100; overflow: hidden;
+        }
+        .modal-header { padding: 1.5vh; display: flex; justify-content: space-between; color: white; font-size: 2vh; }
+        .close-btn { background: transparent; border: none; color: white; font-size: 3vh; cursor: pointer; }
+        .modal-content { flex-grow: 1; color: white; padding: 2vh; overflow-y: auto; font-size: 2vh; }
+
+        #aiWindow { border-color: var(--ai-color); }
+        #aiWindow .modal-header { background: var(--ai-color); }
+
+        #graphWindow { border-color: var(--graph-color); }
+        #graphWindow .modal-header { background: var(--graph-color); }
+
+        #webcamWindow { border-color: #2c3e50; }
+        #webcamWindow .modal-header { background: #2c3e50; }
+
+        .mic-btn { background: #e74c3c; width: 10vh; height: 10vh; border-radius: 50%; border: 0.5vh solid white; margin: 2vh auto; cursor: pointer; font-size: 4vh; color: white; display: flex; align-items: center; justify-content: center; }
+        .listening { animation: pulse 1s infinite; background: #2ecc71 !important; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 2vh rgba(46, 204, 113, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
+        .status-text { text-align: center; color: #bbb; font-size: 1.5vh; margin-bottom: 1vh; }
+
+        #graphCanvas { background: #fff; width: 100%; height: 50vh; }
+        #equationDisplay { color: var(--graph-color); font-size: 2vh; text-align: center; padding: 1vh; background: #eee; }
+
+        /* Modo descanso visual */
+        .eye-care-active { background-color: #f4e1c1 !important; }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA INICIO UdeA -->
+    <div id="splash">
+        <img src="logo-udea.png" alt="UdeA">
+        <h1>Universidad de Antioquia</h1>
+        <h2>Facultad de Educación</h2>
+        <div class="credit">Diseñado por Docente: Hernán Quiroz</div>
+    </div>
+
+    <!-- BLOQUEO ANTI-INSPECCION -->
+    <div id="securityBlock">
+        Acceso No Autorizado. <br> Herramientas de desarrollador detectadas. <br> Cierre esta ventana para continuar.
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="app">
+        <canvas id="pizarra"></canvas>
+        
+        <div id="persiana">
+            <div id="toggleArrow">◀</div>
+            
+            <div class="tool-group">
+                <div class="tool-label">Colores</div>
+                <div class="colors">
+                    <div class="color-btn active" style="background: #2c3e50;" data-color="#2c3e50"></div>
+                    <div class="color-btn" style="background: #e74c3c;" data-color="#e74c3c"></div>
+                    <div class="color-btn" style="background: #3498db;" data-color="#3498db"></div>
+                    <div class="color-btn" style="background: #2ecc71;" data-color="#2ecc71"></div>
+                </div>
+            </div>
+
+            <div class="tool-group">
+                <div class="tool-label">Grosor</div>
+                <div class="sizes">
+                    <button class="size-btn active" data-size="3"><div class="size-dot" style="w:1vh;h:1vh;width:1vh;height:1vh;"></div></button>
+                    <button class="size-btn" data-size="8"><div class="size-dot" style="width:2vh;height:2vh;"></div></button>
+                    <button class="size-btn" data-size="18"><div class="size-dot" style="width:3vh;height:3vh;"></div></button>
+                </div>
+            </div>
+
+            <div class="tool-group">
+                <button class="action-btn" id="eraserBtn">Borrador</button>
+                <button class="action-btn" id="clearBtn">Limpiar Pizarra</button>
+                <button class="action-btn" id="graphBtn">Seleccionar y Graficar</button>
+                <button class="action-btn" id="aiBtn">Asistente IA</button>
+                <button class="action-btn" id="webcamBtn">Cámara Remotos</button>
+                <button class="action-btn" id="eyeCareBtn">Modo Descanso</button>
+                <button class="action-btn" id="fullscreenBtn">Pantalla Completa</button>
+            </div>
+
+            <div class="credit-text">Diseñado por Docente: Hernán Quiroz</div>
+        </div>
+    </div>
+
+    <!-- MODAL IA -->
+    <div id="aiWindow" class="modal">
+        <div class="modal-header"><span>Asistente IA</span><button class="close-btn" onclick="closeModal('aiWindow')">X</button></div>
+        <div id="aiContent" class="modal-content"><div class="ai-message">Hola, toca el micrófono y háblame.</div></div>
+        <div class="status-text" id="aiStatus">Toca el micro para hablar</div>
+        <button class="mic-btn" id="aiMic">🎤</button>
+    </div>
+
+    <!-- MODAL GRAFICADOR -->
+    <div id="graphWindow" class="modal">
+        <div class="modal-header"><span>Graficador Matemático</span><button class="close-btn" onclick="closeModal('graphWindow')">X</button></div>
+        <div id="equationDisplay">Dibuja un recuadro sobre tu ecuación y luego habla.</div>
+        <canvas id="graphCanvas"></canvas>
+        <div class="status-text" id="graphStatus">Toca el micro para decir la función</div>
+        <button class="mic-btn" id="graphMic" style="background: var(--graph-color);">🎤</button>
+    </div>
+
+    <!-- MODAL CAMARA WEB -->
+    <div id="webcamWindow" class="modal">
+        <div class="modal-header"><span>Cámara Remotos (Jitsi)</span><button class="close-btn" onclick="closeModal('webcamWindow')">X</button></div>
+        <iframe id="jitsiFrame" style="width:100%; height:100%; border:none;" src=""></iframe>
+    </div>
+
+    <script>
+        // --- 1. SEGURIDAD Y BLOQUEO DEVTOOLS ---
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault(); e.stopPropagation();
+                return false;
+            }
+        });
+        const devtoolsOpen = /./;
+        devtoolsOpen.toString = function() {
+            document.getElementById('securityBlock').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        };
+        setInterval(function() {
+            const before = new Date();
+            debugger;
+            const after = new Date();
+            if (after - before > 100) { // Tiempo anormal = Devtools abiertas
+                document.getElementById('securityBlock').style.display = 'flex';
+            }
+        }, 1000);
+
+        // --- 2. PANTALLA DE INICIO (1 MINUTO) Y PERSIANA ---
+        setTimeout(() => {
+            document.getElementById('splash').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('splash').style.display = 'none';
+                togglePersiana(true); // Auto-despliega la persiana
+                startVoiceCommands(); // Inicia el escucha de voz
+            }, 2000);
+        }, 60000); // 60000ms = 1 minuto
+
+        // --- 3. LÓGICA DE PIZARRA Y SELECCIÓN ---
+        const canvas = document.getElementById('pizarra');
+        const ctx = canvas.getContext('2d');
+        let currentColor = '#2c3e50', currentSize = 3, isEraser = false, isSelecting = false, isDrawing = false;
+        let startX = 0, startY = 0, savedImage = null;
+
+        function resizeCanvas() {
+            const p = canvas.parentElement.getBoundingClientRect();
+            canvas.width = p.width; canvas.height = p.height;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function togglePersiana(forceOpen) {
+            const p = document.getElementById('persiana');
+            if (forceOpen === true) p.classList.add('open');
+            else if (forceOpen === false) p.classList.remove('open');
+            else p.classList.toggle('open');
+            document.getElementById('toggleArrow').innerText = p.classList.contains('open') ? '▶' : '◀';
+            setTimeout(resizeCanvas, 300);
+        }
+        document.getElementById('toggleArrow').addEventListener('pointerdown', () => togglePersiana());
+
+        // Tool Listeners
+        document.querySelectorAll('.color-btn').forEach(b => {
+            b.addEventListener('pointerup', () => {
+                document.querySelectorAll('.color-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active'); currentColor = b.dataset.color; isEraser = false; isSelecting = false;
+                document.getElementById('eraserBtn').classList.remove('active');
+                document.getElementById('graphBtn').classList.remove('active');
+            });
+        });
+        document.querySelectorAll('.size-btn').forEach(b => {
+            b.addEventListener('pointerup', () => {
+                document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active'); currentSize = parseInt(b.dataset.size);
+            });
+        });
+        document.getElementById('eraserBtn').addEventListener('pointerup', e => { isEraser = !isEraser; isSelecting=false; e.target.classList.toggle('active', isEraser); document.getElementById('graphBtn').classList.remove('active'); });
+        document.getElementById('clearBtn').addEventListener('pointerup', () => ctx.clearRect(0,0,canvas.width,canvas.height));
+        document.getElementById('eyeCareBtn').addEventListener('pointerup', () => canvas.classList.toggle('eye-care-active'));
+        document.getElementById('fullscreenBtn').addEventListener('pointerup', () => {
+            if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        });
+        document.getElementById('graphBtn').addEventListener('pointerup', e => {
+            isSelecting = !isSelecting; isEraser = false;
+            e.target.classList.toggle('active', isSelecting);
+            document.getElementById('eraserBtn').classList.remove('active');
+        });
+        document.getElementById('aiBtn').addEventListener('pointerup', () => openModal('aiWindow'));
+        document.getElementById('webcamBtn').addEventListener('pointerup', () => {
+            document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA Hernandez Quiroz";
+            openModal('webcamWindow');
+        });
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // Drawing Logic
+        function getPos(e) { const r = canvas.getBoundingClientRect(); return {x: e.clientX-r.left, y: e.clientY-r.top}; }
+        canvas.addEventListener('pointerdown', e => {
+            e.preventDefault(); canvas.setPointerCapture(e.pointerId); isDrawing = true;
+            const p = getPos(e); startX = p.x; startY = p.y;
+            if(isSelecting) savedImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+            else { ctx.beginPath(); ctx.moveTo(startX, startY); }
+        });
+        canvas.addEventListener('pointermove', e => {
+            if(!isDrawing) return; e.preventDefault(); const p = getPos(e);
+            if(isSelecting && savedImage) {
+                ctx.putImageData(savedImage, 0, 0);
+                ctx.strokeStyle = '#16a085'; ctx.lineWidth = 2; ctx.setLineDash([10,10]);
+                ctx.strokeRect(startX, startY, p.x-startX, p.y-startY); ctx.setLineDash([]);
+            } else {
+                if(isEraser){ ctx.globalCompositeOperation='destination-out'; ctx.lineWidth=currentSize*4; }
+                else { ctx.globalCompositeOperation='source-over'; ctx.strokeStyle=currentColor; ctx.lineWidth=currentSize; }
+                ctx.lineTo(p.x, p.y); ctx.stroke();
+            }
+        });
+        function stopDraw(e) {
+            if(isDrawing) {
+                isDrawing = false;
+                if(isSelecting && savedImage) {
+                    ctx.putImageData(savedImage, 0, 0); openModal('graphWindow'); drawGraph('x^2');
+                    isSelecting = false; document.getElementById('graphBtn').classList.remove('active');
+                }
+                ctx.closePath(); ctx.globalCompositeOperation='source-over';
+            }
+        }
+        canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointercancel', stopDraw);
+
+        // --- 4. GRAFICADOR ---
+        function drawGraph(eqStr) {
+            const g = document.getElementById('graphCanvas'); const c = g.getContext('2d');
+            g.width = g.offsetWidth; g.height = g.offsetHeight; c.clearRect(0,0,g.width,g.height);
+            c.strokeStyle='#333'; c.lineWidth=2; c.beginPath();
+            c.moveTo(0,g.height/2); c.lineTo(g.width,g.height/2); c.moveTo(g.width/2,0); c.lineTo(g.width/2,g.height); c.stroke();
+            try {
+                let eq = eqStr.replace(/^y\s*=\s*/i,'').trim();
+                document.getElementById('equationDisplay').innerText = "Graficando: y = " + eq;
+                c.strokeStyle = '#e74c3c'; c.lineWidth=3; c.beginPath();
+                let first = true; let scale = 30;
+                for(let x=-20; x<=20; x+=0.1) {
+                    let y = math.evaluate(eq, {x:x});
+                    let px = g.width/2 + (x*scale); let py = g.height/2 - (y*scale);
+                    if(first){c.moveTo(px,py); first=false;} else c.lineTo(px,py);
+                }
+                c.stroke();
+            } catch(err) { document.getElementById('equationDisplay').innerText = "Error: Función no válida."; }
+        }
+
+        // --- 5. VOZ: IA Y COMANDOS DE SISTEMA ---
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        function setupMic(btnId, recognition, onResult, statusId) {
+            let listening = false;
+            const btn = document.getElementById(btnId);
+            btn.addEventListener('pointerup', () => {
+                if(listening){ recognition.stop(); return; }
+                recognition.start(); listening=true;
+                btn.classList.add('listening'); btn.innerText="⏹️";
+                document.getElementById(statusId).innerText="Escuchando...";
+            });
+            recognition.onresult = e => { const t = e.results[0][0].transcript; onResult(t); };
+            recognition.onend = () => { listening=false; btn.classList.remove('listening'); btn.innerText="🎤"; document.getElementById(statusId).innerText="Toca el micro para hablar"; };
+            recognition.onerror = e => { document.getElementById(statusId).innerText = "Error: "+e.error; listening=false; btn.classList.remove('listening'); btn.innerText="🎤"; };
+        }
+
+        if(SR) {
+            // IA Asistente
+            const recAI = new SR(); recAI.lang='es-ES';
+            setupMic('aiMic', recAI, async (t) => {
+                document.getElementById('aiContent').innerHTML += `<div class="user-message">Tú: ${t}</div>`;
+                try { const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(t)}`); const txt = await r.text();
+                    document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${txt}</div>`;
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(txt));
+                } catch(e){}
+            }, 'aiStatus');
+
+            // Graficador
+            const recGraph = new SR(); recGraph.lang='es-ES';
+            setupMic('graphMic', recGraph, (t) => {
+                let eq = t.toLowerCase().replace(/equis al cuadrado/g,'x^2').replace(/al cuadrado/g,'^2').replace(/equis/g,'x').replace(/por/g,'*').replace(/entre/g,'/').replace(/más/g,'+').replace(/menos/g,'-');
+                drawGraph(eq);
+            }, 'graphStatus');
+        }
+
+        function startVoiceCommands() {
+            if(!SR) return;
+            const rec = new SR(); rec.lang='es-ES'; rec.continuous = true; rec.interimResults = true;
+            let isCmdActive = false;
+            rec.onresult = e => {
+                const transcript = Array.from(e.results).map(r => r[0].transcript).join('').toLowerCase();
+                if(transcript.includes('computadora')) isCmdActive = true;
+                
+                if(isCmdActive) {
+                    if(transcript.includes('abrir menú') || transcript.includes('desplegar menú')) { togglePersiana(true); isCmdActive=false; }
+                    if(transcript.includes('cerrar menú') || transcript.includes('plegar menú')) { togglePersiana(false); isCmdActive=false; }
+                    if(transcript.includes('limpiar pizarra')) { ctx.clearRect(0,0,canvas.width,canvas.height); isCmdActive=false; }
+                    if(transcript.includes('pantalla completa')) { document.documentElement.requestFullscreen(); isCmdActive=false; }
+                }
+            };
+            rec.onend = () => { if(!document.getElementById('securityBlock').style.display.includes('flex')) rec.start(); };
+            rec.start();
+        }
+    </script>
+</body>
+</html>
