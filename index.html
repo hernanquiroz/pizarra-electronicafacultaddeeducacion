@@ -36,21 +36,37 @@
             z-index: 1000; transition: opacity 2s ease-in-out;
         }
         
-        /* Efecto 3D para el logo */
+        /* Efecto 3D + Latido de Corazón para el logo */
         #splash img { 
             width: 40vh; height: auto; margin-bottom: 4vh; 
             filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
-            animation: logo3D 60s ease-in-out forwards;
+            animation: heartbeat3D 60s ease-in-out forwards;
         }
-        @keyframes logo3D {
+        @keyframes heartbeat3D {
             0% { transform: perspective(1000px) translateZ(-800px) scale(0.3); opacity: 0; }
-            10% { transform: perspective(1000px) translateZ(0) scale(1); opacity: 1; }
-            20% { transform: perspective(1000px) rotateY(15deg) translateZ(100px) scale(1.1); }
-            30% { transform: perspective(1000px) rotateY(-15deg) translateZ(100px) scale(1.1); }
-            40% { transform: perspective(1000px) rotateY(0) translateZ(0) scale(1); }
-            60% { transform: perspective(1000px) rotateX(10deg) translateZ(50px) scale(1.05); }
-            80% { transform: perspective(1000px) rotateX(0) translateZ(0) scale(1); }
-            95% { transform: perspective(1000px) translateZ(0) scale(1); opacity: 1; }
+            8% { transform: perspective(1000px) translateZ(0) scale(1); opacity: 1; }
+            /* Latido 1 */
+            10% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
+            12% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            14% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
+            16% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            /* Flotando 3D */
+            20% { transform: perspective(1000px) rotateY(15deg) translateZ(50px) scale(1.05); }
+            /* Latido 2 */
+            25% { transform: perspective(1000px) rotateY(0) translateZ(100px) scale(1.15); }
+            27% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            29% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
+            31% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            /* Flotando 3D */
+            40% { transform: perspective(1000px) rotateX(10deg) translateZ(50px) scale(1.05); }
+            /* Latido 3 */
+            50% { transform: perspective(1000px) rotateX(0) translateZ(100px) scale(1.15); }
+            52% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            54% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
+            56% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            /* Flotando 3D */
+            70% { transform: perspective(1000px) rotateY(-10deg) translateZ(50px) scale(1.05); }
+            80% { transform: perspective(1000px) rotateY(0) translateZ(0) scale(1); opacity: 1; }
             100% { transform: perspective(1000px) translateZ(-800px) scale(0.3); opacity: 0; }
         }
 
@@ -306,7 +322,7 @@
         });
         document.getElementById('aiBtn').addEventListener('pointerup', () => openModal('aiWindow'));
         document.getElementById('webcamBtn').addEventListener('pointerup', () => {
-            document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA_Hernan_Quiroz";
+            document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA_Facultad_de_Educacion";
             openModal('webcamWindow');
         });
 
