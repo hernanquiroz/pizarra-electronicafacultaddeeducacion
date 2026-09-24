@@ -45,26 +45,20 @@
         @keyframes heartbeat3D {
             0% { transform: perspective(1000px) translateZ(-800px) scale(0.3); opacity: 0; }
             8% { transform: perspective(1000px) translateZ(0) scale(1); opacity: 1; }
-            /* Latido 1 */
             10% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
             12% { transform: perspective(1000px) translateZ(10px) scale(1); }
             14% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
             16% { transform: perspective(1000px) translateZ(10px) scale(1); }
-            /* Flotando 3D */
             20% { transform: perspective(1000px) rotateY(15deg) translateZ(50px) scale(1.05); }
-            /* Latido 2 */
             25% { transform: perspective(1000px) rotateY(0) translateZ(100px) scale(1.15); }
             27% { transform: perspective(1000px) translateZ(10px) scale(1); }
             29% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
             31% { transform: perspective(1000px) translateZ(10px) scale(1); }
-            /* Flotando 3D */
             40% { transform: perspective(1000px) rotateX(10deg) translateZ(50px) scale(1.05); }
-            /* Latido 3 */
             50% { transform: perspective(1000px) rotateX(0) translateZ(100px) scale(1.15); }
             52% { transform: perspective(1000px) translateZ(10px) scale(1); }
             54% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
             56% { transform: perspective(1000px) translateZ(10px) scale(1); }
-            /* Flotando 3D */
             70% { transform: perspective(1000px) rotateY(-10deg) translateZ(50px) scale(1.05); }
             80% { transform: perspective(1000px) rotateY(0) translateZ(0) scale(1); opacity: 1; }
             100% { transform: perspective(1000px) translateZ(-800px) scale(0.3); opacity: 0; }
@@ -89,6 +83,23 @@
             display: block; width: 100%; height: 100%;
         }
 
+        /* --- NUEVOS MODOS DE VISUALIZACIÓN --- */
+        .grid-active {
+            background-image: 
+                linear-gradient(#888 1px, transparent 1px),
+                linear-gradient(90deg, #888 1px, transparent 1px) !important;
+            background-size: 1cm 1cm !important; 
+        }
+        .dark-mode-active {
+            background-color: #1e272e !important; 
+            background-image: none !important;
+        }
+        .dark-mode-active.grid-active {
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px) !important;
+        }
+
         /* --- PERSIANA LATERAL --- */
         #persiana {
             position: fixed; right: 0; top: 0;
@@ -96,7 +107,7 @@
             background: var(--toolbar-bg);
             display: flex; flex-direction: column;
             padding: 2vh; gap: 3vh; box-sizing: border-box;
-            transform: translateX(100%); /* Oculta por defecto a la derecha */
+            transform: translateX(100%);
             transition: transform 0.3s ease; z-index: 100;
             align-items: center;
             overflow: visible; 
@@ -131,6 +142,13 @@
         #aiBtn { background: var(--ai-color); }
         #graphBtn { background: var(--graph-color); }
         #webcamBtn { background: #2c3e50; }
+        #gridBtn { background: #95a5a6; } #gridBtn.active { background: #7f8c8d; box-shadow: 0 0 10px white; }
+        #darkBtn { background: #2c3e50; } #darkBtn.active { background: #34495e; box-shadow: 0 0 10px white; }
+        
+        /* Contenedor para botones de Deshacer/Rehacer en fila */
+        .history-btns { display: flex; flex-direction: row; width: 100%; gap: 1vh; }
+        .history-btns .action-btn { width: 50%; font-size: 3vh; padding: 1vh; }
+        #undoBtn { background: #7f8c8d; } #redoBtn { background: #7f8c8d; }
 
         .credit-text { margin-top: auto; color: #7f8c8d; font-size: 1.5vh; text-align: center; }
 
@@ -205,11 +223,20 @@
             </div>
 
             <div class="tool-group">
+                <div class="history-btns">
+                    <button class="action-btn" id="undoBtn">↶</button>
+                    <button class="action-btn" id="redoBtn">↷</button>
+                </div>
+            </div>
+
+            <div class="tool-group">
                 <button class="action-btn" id="eraserBtn">Borrador</button>
                 <button class="action-btn" id="clearBtn">Limpiar Pizarra</button>
                 <button class="action-btn" id="graphBtn">Seleccionar y Graficar</button>
                 <button class="action-btn" id="aiBtn">Asistente IA</button>
                 <button class="action-btn" id="webcamBtn">Cámara Remotos</button>
+                <button class="action-btn" id="gridBtn">Cuadrícula (1cm)</button>
+                <button class="action-btn" id="darkBtn">Modo Oscuro Solar</button>
                 <button class="action-btn" id="eyeCareBtn">Modo Descanso</button>
                 <button class="action-btn" id="fullscreenBtn">Pantalla Completa</button>
             </div>
@@ -276,10 +303,51 @@
         let currentColor = '#2c3e50', currentSize = 3, isEraser = false, isSelecting = false, isDrawing = false;
         let startX = 0, startY = 0, savedImage = null;
 
+        // --- SISTEMA DE HISTORIAL (UNDO/REDO) ---
+        let history = [];
+        let redoStack = [];
+        const MAX_HISTORY = 20;
+
+        function saveState() {
+            redoStack = []; // Si dibujamos algo nuevo, borramos el historial de "Rehacer"
+            if (history.length >= MAX_HISTORY) history.shift();
+            history.push(canvas.toDataURL()); // Guardamos una imagen comprimida para ahorrar RAM
+        }
+
+        function restoreState(dataURL) {
+            let img = new Image();
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = dataURL;
+        }
+
+        function undo() {
+            if (history.length > 1) {
+                redoStack.push(history.pop());
+                restoreState(history[history.length - 1]);
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                let state = redoStack.pop();
+                history.push(state);
+                restoreState(state);
+            }
+        }
+
+        document.getElementById('undoBtn').addEventListener('pointerup', undo);
+        document.getElementById('redoBtn').addEventListener('pointerup', redo);
+
         function resizeCanvas() {
             const p = document.getElementById('app').getBoundingClientRect();
             canvas.width = p.width; canvas.height = p.height;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            // Resetear historial al cambiar de tamaño para evitar desajustes de imagen
+            history = []; redoStack = [];
+            saveState(); // Guardar estado en blanco inicial
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -309,7 +377,7 @@
             });
         });
         document.getElementById('eraserBtn').addEventListener('pointerup', e => { isEraser = !isEraser; isSelecting=false; e.target.classList.toggle('active', isEraser); document.getElementById('graphBtn').classList.remove('active'); });
-        document.getElementById('clearBtn').addEventListener('pointerup', () => ctx.clearRect(0,0,canvas.width,canvas.height));
+        document.getElementById('clearBtn').addEventListener('pointerup', () => { ctx.clearRect(0,0,canvas.width,canvas.height); saveState(); });
         document.getElementById('eyeCareBtn').addEventListener('pointerup', () => canvas.classList.toggle('eye-care-active'));
         document.getElementById('fullscreenBtn').addEventListener('pointerup', () => {
             if(!document.fullscreenElement) document.documentElement.requestFullscreen();
@@ -324,6 +392,23 @@
         document.getElementById('webcamBtn').addEventListener('pointerup', () => {
             document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA_Facultad_de_Educacion";
             openModal('webcamWindow');
+        });
+
+        // NUEVOS MODOS
+        document.getElementById('gridBtn').addEventListener('pointerup', e => {
+            canvas.classList.toggle('grid-active');
+            e.target.classList.toggle('active');
+        });
+        document.getElementById('darkBtn').addEventListener('pointerup', e => {
+            canvas.classList.toggle('dark-mode-active');
+            e.target.classList.toggle('active');
+            if (canvas.classList.contains('dark-mode-active')) {
+                currentColor = '#FFFFFF'; 
+                document.querySelectorAll('.color-btn').forEach(x => x.classList.remove('active'));
+            } else {
+                currentColor = '#2c3e50';
+                document.querySelector('.color-btn[data-color="#2c3e50"]').classList.add('active');
+            }
         });
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -355,6 +440,9 @@
                 if(isSelecting && savedImage) {
                     ctx.putImageData(savedImage, 0, 0); openModal('graphWindow'); drawGraph('x^2');
                     isSelecting = false; document.getElementById('graphBtn').classList.remove('active');
+                } else {
+                    // Guardar en el historial solo si estábamos dibujando/borrando
+                    saveState();
                 }
                 ctx.closePath(); ctx.globalCompositeOperation='source-over';
             }
