@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -100,22 +101,31 @@
                 linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px) !important;
         }
 
-        /* --- PERSIANA LATERAL --- */
+        /* --- PERSIANA LATERAL (Corregida para no ocultar la flecha) --- */
         #persiana {
             position: fixed; right: 0; top: 0;
             width: 25vh; min-width: 250px; height: 100vh;
             background: var(--toolbar-bg);
-            display: flex; flex-direction: column;
-            padding: 2vh; gap: 3vh; box-sizing: border-box;
-            transform: translateX(100%);
+            transform: translateX(100%); /* Oculta por defecto a la derecha */
             transition: transform 0.3s ease; z-index: 100;
-            align-items: center;
-            overflow-y: auto; /* Permitir scroll si hay muchos botones */
+            overflow: visible; /* Permite que la flecha se vea fuera del borde */
         }
-        #persiana::-webkit-scrollbar { width: 8px; }
-        #persiana::-webkit-scrollbar-thumb { background: #7f8c8d; border-radius: 4px; }
-
         #persiana.open { transform: translateX(0); }
+
+        /* Contenedor interno con scroll */
+        .persiana-content {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 2vh;
+            gap: 3vh;
+            box-sizing: border-box;
+            align-items: center;
+            overflow-y: auto;
+        }
+        .persiana-content::-webkit-scrollbar { width: 8px; }
+        .persiana-content::-webkit-scrollbar-thumb { background: #7f8c8d; border-radius: 4px; }
 
         #toggleArrow {
             position: absolute; left: -6vh; top: 50%; transform: translateY(-50%);
@@ -211,58 +221,60 @@
         <div id="persiana">
             <div id="toggleArrow">◀</div>
             
-            <div class="tool-group">
-                <div class="tool-label">Colores</div>
-                <div class="colors">
-                    <div class="color-btn active" style="background: #2c3e50;" data-color="#2c3e50"></div>
-                    <div class="color-btn" style="background: #e74c3c;" data-color="#e74c3c"></div>
-                    <div class="color-btn" style="background: #3498db;" data-color="#3498db"></div>
-                    <div class="color-btn" style="background: #2ecc71;" data-color="#2ecc71"></div>
+            <div class="persiana-content">
+                <div class="tool-group">
+                    <div class="tool-label">Colores</div>
+                    <div class="colors">
+                        <div class="color-btn active" style="background: #2c3e50;" data-color="#2c3e50"></div>
+                        <div class="color-btn" style="background: #e74c3c;" data-color="#e74c3c"></div>
+                        <div class="color-btn" style="background: #3498db;" data-color="#3498db"></div>
+                        <div class="color-btn" style="background: #2ecc71;" data-color="#2ecc71"></div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="tool-group">
-                <div class="tool-label">Grosor</div>
-                <div class="sizes">
-                    <button class="size-btn active" data-size="3"><div class="size-dot" style="width:1vh;height:1vh;"></div></button>
-                    <button class="size-btn" data-size="8"><div class="size-dot" style="width:2vh;height:2vh;"></div></button>
-                    <button class="size-btn" data-size="18"><div class="size-dot" style="width:3vh;height:3vh;"></div></button>
+                <div class="tool-group">
+                    <div class="tool-label">Grosor</div>
+                    <div class="sizes">
+                        <button class="size-btn active" data-size="3"><div class="size-dot" style="width:1vh;height:1vh;"></div></button>
+                        <button class="size-btn" data-size="8"><div class="size-dot" style="width:2vh;height:2vh;"></div></button>
+                        <button class="size-btn" data-size="18"><div class="size-dot" style="width:3vh;height:3vh;"></div></button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="tool-group">
-                <div class="tool-label">Formas y Vectores</div>
-                <div class="shapes-grid">
-                    <button class="shape-btn" data-shape="line">╱</button>
-                    <button class="shape-btn" data-shape="arrow">➜</button>
-                    <button class="shape-btn" data-shape="segment">⌗</button>
-                    <button class="shape-btn" data-shape="rect">▭</button>
-                    <button class="shape-btn" data-shape="circle">◯</button>
-                    <button class="shape-btn" data-shape="triangle">△</button>
-                    <button class="shape-btn" data-shape="axes" style="font-size: 1.5vh;">XYZ</button>
+                <div class="tool-group">
+                    <div class="tool-label">Formas y Vectores</div>
+                    <div class="shapes-grid">
+                        <button class="shape-btn" data-shape="line">╱</button>
+                        <button class="shape-btn" data-shape="arrow">➜</button>
+                        <button class="shape-btn" data-shape="segment">⌗</button>
+                        <button class="shape-btn" data-shape="rect">▭</button>
+                        <button class="shape-btn" data-shape="circle">◯</button>
+                        <button class="shape-btn" data-shape="triangle">△</button>
+                        <button class="shape-btn" data-shape="axes" style="font-size: 1.5vh;">XYZ</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="tool-group">
-                <div class="history-btns">
-                    <button class="action-btn" id="undoBtn">↶</button>
-                    <button class="action-btn" id="redoBtn">↷</button>
+                <div class="tool-group">
+                    <div class="history-btns">
+                        <button class="action-btn" id="undoBtn">↶</button>
+                        <button class="action-btn" id="redoBtn">↷</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="tool-group">
-                <button class="action-btn" id="eraserBtn">Borrador</button>
-                <button class="action-btn" id="clearBtn">Limpiar Pizarra</button>
-                <button class="action-btn" id="graphBtn">Seleccionar y Graficar</button>
-                <button class="action-btn" id="aiBtn">Asistente IA</button>
-                <button class="action-btn" id="webcamBtn">Cámara Remotos</button>
-                <button class="action-btn" id="gridBtn">Cuadrícula (1cm)</button>
-                <button class="action-btn" id="darkBtn">Modo Oscuro Solar</button>
-                <button class="action-btn" id="eyeCareBtn">Modo Descanso</button>
-                <button class="action-btn" id="fullscreenBtn">Pantalla Completa</button>
-            </div>
+                <div class="tool-group">
+                    <button class="action-btn" id="eraserBtn">Borrador</button>
+                    <button class="action-btn" id="clearBtn">Limpiar Pizarra</button>
+                    <button class="action-btn" id="graphBtn">Seleccionar y Graficar</button>
+                    <button class="action-btn" id="aiBtn">Asistente IA</button>
+                    <button class="action-btn" id="webcamBtn">Cámara Remotos</button>
+                    <button class="action-btn" id="gridBtn">Cuadrícula (1cm)</button>
+                    <button class="action-btn" id="darkBtn">Modo Oscuro Solar</button>
+                    <button class="action-btn" id="eyeCareBtn">Modo Descanso</button>
+                    <button class="action-btn" id="fullscreenBtn">Pantalla Completa</button>
+                </div>
 
-            <div class="credit-text">Pizarra diseñada por Ing. Hernán Quiroz</div>
+                <div class="credit-text">Pizarra diseñada por Ing. Hernán Quiroz</div>
+            </div>
         </div>
     </div>
 
@@ -322,7 +334,7 @@
         const canvas = document.getElementById('pizarra');
         const ctx = canvas.getContext('2d');
         let currentColor = '#2c3e50', currentSize = 3, isEraser = false, isSelecting = false, isDrawing = false;
-        let currentShape = null; // Nueva variable para formas
+        let currentShape = null; 
         let startX = 0, startY = 0, savedImage = null;
 
         // --- SISTEMA DE HISTORIAL (UNDO/REDO) ---
@@ -526,7 +538,6 @@
                     ctx.putImageData(savedImage, 0, 0); openModal('graphWindow'); drawGraph('x^2');
                     isSelecting = false; document.getElementById('graphBtn').classList.remove('active');
                 } else {
-                    // Guardar en el historial si dibujó a mano alzada o con formas
                     saveState();
                 }
                 ctx.closePath(); ctx.globalCompositeOperation='source-over';
