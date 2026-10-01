@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aula Babel - UdeA - Ing. Hernán Quiroz</title>
+    <!-- Motor OCR Local a prueba de fallos -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root {
             --udea-green: #006633; --udea-gold: #FFD700; --bg-color: #1a1a1a;
@@ -294,7 +296,6 @@
             else if (isLangMode && savedImage) { ctx.putImageData(savedImage, 0, 0); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2; ctx.setLineDash([10,10]); ctx.strokeRect(startX, startY, p.x-startX, p.y-startY); ctx.setLineDash([]); }
             else { if(isEraser){ ctx.globalCompositeOperation='destination-out'; ctx.lineWidth=currentSize*4; } else { ctx.globalCompositeOperation='source-over'; ctx.strokeStyle=currentColor; ctx.lineWidth=currentSize; } ctx.lineTo(p.x, p.y); ctx.stroke(); }
         });
-        
         function stopDraw(e) {
             if (e.pointerType === 'pen') penIsDown = false;
             if (e.pointerType === 'touch' && penIsDown) return;
@@ -307,9 +308,9 @@
                     let w = Math.abs(p.x - startX); let h = Math.abs(p.y - startY);
                     
                     if (w > 10 && h > 10) { 
-                        // 1. Capturar imagen y comprimir (máx 500px ancho, JPEG) para que la IA no la rechace
+                        // 1. Capturar y comprimir
                         let tempCanvas = document.createElement('canvas'); 
-                        let maxW = 500;
+                        let maxW = 800;
                         let scale = maxW / w;
                         if (w < maxW) scale = 1;
                         tempCanvas.width = w * scale; 
@@ -318,7 +319,7 @@
                         tempCtx.fillStyle = "#FFFFFF"; 
                         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
                         tempCtx.drawImage(canvas, x, y, w, h, 0, 0, tempCanvas.width, tempCanvas.height); 
-                        let imgData = tempCanvas.toDataURL('image/jpeg', 0.8); // JPEG más ligero
+                        let imgData = tempCanvas.toDataURL('image/png');
                     
                         // 2. Borrar recuadro punteado
                         ctx.putImageData(savedImage, 0, 0); 
@@ -326,11 +327,11 @@
                         // 3. Dibujar HALO AZUL INMEDIATO
                         ctx.save();
                         ctx.globalCompositeOperation = 'source-over';
-                        ctx.fillStyle = 'rgba(52, 152, 219, 0.3)'; // Azul semitransparente
+                        ctx.fillStyle = 'rgba(52, 152, 219, 0.3)'; 
                         ctx.fillRect(x - 10, y - 10, w + 20, h + 20);
                         ctx.restore();
 
-                        // 4. Procesar IA
+                        // 4. Procesar
                         processLanguage(imgData, x, y, w, h); 
                     } else {
                         ctx.putImageData(savedImage, 0, 0);
@@ -344,45 +345,52 @@
         }
         canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointercancel', stopDraw);
 
-        // Aula Babel (Con imagen comprimida)
+        // AULA BABEL: Híbrido (OCR Local + IA Texto)
         async function processLanguage(base64Image, x, y, w, h) {
             const notif = document.getElementById('arNotification');
-            notif.innerText = "🌐 Aula Babel: Enviando a la IA...";
+            notif.innerText = "🔍 Escaneando texto localmente...";
             notif.style.display = 'block';
+            
             try {
-                const response = await fetch('https://text.pollinations.ai/openai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: 'openai',
-                        messages: [
-                            {
-                                role: 'system',
-                                content: 'You are an OCR API. Read the handwritten text. Respond ONLY with a valid JSON object: {"text": "corrected_text", "lang": "language", "translation": "spanish_translation_or_null"}. Do not add markdown.'
-                            },
-                            {
-                                role: 'user',
-                                content: [
-                                    { type: 'text', text: 'Read this.' },
-                                    { type: 'image_url', image_url: { url: base64Image } }
-                                ]
-                            }
-                        ]
-                    })
+                // 1. Leer con Tesseract.js (100% local, sin internet)
+                const worker = await Tesseract.createWorker(['eng', 'spa', 'por', 'fra'], 1, {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            notif.innerText = `🔍 Escaneando... ${Math.round(m.progress * 100)}%`;
+                        }
+                    }
                 });
-                const data = await response.json();
-                let textResp = data.choices[0].message.content;
+                const ret = await worker.recognize(base64Image);
+                await worker.terminate();
                 
-                textResp = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
+                let extractedText = ret.data.text.trim();
                 
-                let text = "No leído", lang = "Desconocido", translation = null;
-                let jsonMatch = textResp.match(/\{.*\}/s);
-                if (jsonMatch) {
-                    let parsed = JSON.parse(jsonMatch[0]);
-                    text = parsed.text || textResp;
-                    lang = parsed.lang || "Desconocido";
-                    translation = parsed.translation;
-                } else {
+                if (!extractedText || extractedText.length < 1) {
+                    throw new Error("Texto no detectado");
+                }
+
+                notif.innerText = "🌐 Traduciendo...";
+                
+                // 2. Pedir traducción y idioma a la API de texto (mucho más rápida)
+                const prompt = encodeURIComponent(`El texto escaneado es: "${extractedText}". Determina el idioma (Español, Inglés, Portugués, Francés). Corrige cualquier error ortográfico. Si no es Español, tradúcelo. Responde SOLO en formato JSON: {"text": "TEXTO_CORREGIDO", "lang": "Idioma", "translation": "Traducción o null si ya es español"}`);
+                
+                const r = await fetch(`https://text.pollinations.ai/${prompt}`);
+                let textResp = await r.text();
+                
+                let text = extractedText, lang = "Desconocido", translation = null;
+                
+                try {
+                    textResp = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
+                    let jsonMatch = textResp.match(/\{.*\}/s);
+                    if (jsonMatch) {
+                        let parsed = JSON.parse(jsonMatch[0]);
+                        text = parsed.text || extractedText;
+                        lang = parsed.lang || "Desconocido";
+                        translation = parsed.translation;
+                    } else {
+                        text = textResp;
+                    }
+                } catch (e) {
                     text = textResp;
                 }
 
@@ -391,9 +399,9 @@
                 else if (lang.toLowerCase().includes('portug')) speechLang = 'pt-BR';
                 else if (lang.toLowerCase().includes('franc')) speechLang = 'fr-FR';
 
+                // Dibujar en pantalla
                 ctx.save();
                 ctx.globalCompositeOperation = 'source-over';
-                
                 let fontSize = Math.max(16, Math.min(48, w / text.length * 1.8));
                 ctx.font = `bold ${fontSize}px Segoe UI`;
                 ctx.textAlign = 'center';
@@ -407,6 +415,7 @@
                 }
                 ctx.restore();
 
+                // Pronunciación nativa
                 let utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = speechLang;
                 utterance.rate = 0.9; 
@@ -416,12 +425,12 @@
                 setTimeout(() => { notif.style.display = 'none'; }, 4000);
 
             } catch(e) {
-                notif.innerText = "❌ Error de conexión con la IA. Intenta de nuevo.";
+                notif.innerText = "❌ No se pudo leer. Intenta con letra imprenta más clara.";
                 setTimeout(() => { notif.style.display = 'none'; }, 5000);
             }
         }
 
-        // Asistente IA Conversacional (Anti-Eco)
+        // Asistente IA Conversacional (Anti-Eco Corregido)
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         let aiRecognition = null;
         let isAISpeaking = false;
@@ -434,16 +443,25 @@
 
             const aiMic = document.getElementById('aiMic');
             aiMic.addEventListener('pointerup', () => {
+                // Cancelar cualquier audio atascado para desbloquear el mic
+                window.speechSynthesis.cancel();
+                isAISpeaking = false;
+
                 if (aiMic.classList.contains('listening')) {
                     aiRecognition.stop();
                     return;
                 }
+                
                 try {
                     aiRecognition.start();
                     aiMic.classList.add('listening');
                     aiMic.innerText = "⏹️";
                     document.getElementById('aiStatus').innerText = "Escuchando...";
-                } catch(e) { console.error(e); }
+                } catch(e) {
+                    document.getElementById('aiStatus').innerText = "Error: Permiso de micrófono denegado o en uso.";
+                    aiMic.classList.remove('listening');
+                    aiMic.innerText = "🎤";
+                }
             });
 
             aiRecognition.onresult = async (e) => {
@@ -452,7 +470,7 @@
                 document.getElementById('aiStatus').innerText = "Pensando...";
                 
                 try {
-                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve.")}`);
+                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve y conversacional.")}`);
                     const txt = await r.text();
                     
                     document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${txt}</div>`;
@@ -463,12 +481,16 @@
                     utterance.lang = 'es-ES';
                     utterance.onend = () => {
                         isAISpeaking = false;
+                        aiMic.classList.remove('listening');
+                        aiMic.innerText = "🎤";
                         document.getElementById('aiStatus').innerText = "Toca el micro para hablar";
                     };
                     window.speechSynthesis.speak(utterance);
 
                 } catch(err) {
-                    document.getElementById('aiStatus').innerText = "Error de conexión.";
+                    document.getElementById('aiStatus').innerText = "Error de conexión con la IA.";
+                    aiMic.classList.remove('listening');
+                    aiMic.innerText = "🎤";
                 }
             };
 
