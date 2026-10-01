@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aula Babel - UdeA - Ing. Hernán Quiroz</title>
-    <!-- Motor OCR Local (A prueba de fallos) -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root {
             --udea-green: #006633; --udea-gold: #FFD700; --bg-color: #1a1a1a;
@@ -172,7 +170,7 @@
 
     <div id="aiWindow" class="modal">
         <div class="modal-header"><span>Asistente IA (Conversacional)</span><button class="close-btn" onclick="closeModal('aiWindow')">X</button></div>
-        <div id="aiContent" class="modal-content"><div class="ai-message">Hola, soy tu asistente conversacional. Toca el micrófono y habla conmigo para practicar. Te corregiré en tiempo real.</div></div>
+        <div id="aiContent" class="modal-content"><div class="ai-message">Hola, soy tu asistente conversacional. Toca el micrófono y habla conmigo para practicar.</div></div>
         <div class="status-text" id="aiStatus">Toca el micro para hablar</div>
         <button class="mic-btn" id="aiMic">🎤</button>
     </div>
@@ -247,8 +245,7 @@
                 const img = new Image();
                 img.onload = function() {
                     ctx.clearRect(0,0,canvas.width,canvas.height);
-                    let hRatio = canvas.width / img.width;
-                    let vRatio = canvas.height / img.height;
+                    let hRatio = canvas.width / img.width; let vRatio = canvas.height / img.height;
                     let ratio = Math.min(hRatio, vRatio);
                     let centerShift_x = (canvas.width - img.width * ratio) / 2;
                     let centerShift_y = (canvas.height - img.height * ratio) / 2;
@@ -270,7 +267,7 @@
         document.getElementById('recordBtn').addEventListener('pointerup', async () => {
             const btn = document.getElementById('recordBtn');
             if (!isRecording) {
-                try { const stream = canvas.captureStream(30); const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true }); audioStream.getAudioTracks().forEach(track => stream.addTrack(track)); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data); mediaRecorder.onstop = e => { const blob = new Blob(chunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Clase_Idiomas_UdeA.webm'; a.click(); URL.revokeObjectURL(url); }; mediaRecorder.start(); isRecording = true; btn.classList.add('recording'); btn.innerText = "⏹️ Detener Grab."; } catch (err) { alert("No se pudo acceder al micrófono para grabar la clase."); }
+                try { const stream = canvas.captureStream(30); const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true }); audioStream.getAudioTracks().forEach(track => stream.addTrack(track)); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data); mediaRecorder.onstop = e => { const blob = new Blob(chunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Clase_Idiomas_UdeA.webm'; a.click(); URL.revokeObjectURL(url); }; mediaRecorder.start(); isRecording = true; btn.classList.add('recording'); btn.innerText = "⏹️ Detener Grab."; } catch (err) { alert("No se pudo acceder al micrófono."); }
             } else { mediaRecorder.stop(); isRecording = false; btn.classList.remove('recording'); btn.innerText = "⏺️ Grabar Clase"; }
         });
 
@@ -297,32 +294,49 @@
             else if (isLangMode && savedImage) { ctx.putImageData(savedImage, 0, 0); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2; ctx.setLineDash([10,10]); ctx.strokeRect(startX, startY, p.x-startX, p.y-startY); ctx.setLineDash([]); }
             else { if(isEraser){ ctx.globalCompositeOperation='destination-out'; ctx.lineWidth=currentSize*4; } else { ctx.globalCompositeOperation='source-over'; ctx.strokeStyle=currentColor; ctx.lineWidth=currentSize; } ctx.lineTo(p.x, p.y); ctx.stroke(); }
         });
+        
         function stopDraw(e) {
             if (e.pointerType === 'pen') penIsDown = false;
             if (e.pointerType === 'touch' && penIsDown) return;
             if(isDrawing) {
                 isDrawing = false;
                 const p = getPos(e);
-                const notif = document.getElementById('arNotification');
                 
                 if (isLangMode && savedImage) {
-                    ctx.putImageData(savedImage, 0, 0); 
-                    let x = Math.min(startX, p.x); let y = Math.min(startY, p.y); let w = Math.abs(p.x - startX); let h = Math.abs(p.y - startY);
+                    let x = Math.min(startX, p.x); let y = Math.min(startY, p.y); 
+                    let w = Math.abs(p.x - startX); let h = Math.abs(p.y - startY);
+                    
                     if (w > 10 && h > 10) { 
-                        // Agregar padding y fondo blanco para mejorar la lectura OCR local
-                        let pad = 20;
-                        let cx = Math.max(0, x - pad); let cy = Math.max(0, y - pad);
-                        let cw = Math.min(canvas.width - cx, w + pad * 2); let ch = Math.min(canvas.height - cy, h + pad * 2);
-                        
+                        // 1. Capturar imagen y comprimir (máx 500px ancho, JPEG) para que la IA no la rechace
                         let tempCanvas = document.createElement('canvas'); 
-                        tempCanvas.width = cw; tempCanvas.height = ch; 
+                        let maxW = 500;
+                        let scale = maxW / w;
+                        if (w < maxW) scale = 1;
+                        tempCanvas.width = w * scale; 
+                        tempCanvas.height = h * scale; 
                         let tempCtx = tempCanvas.getContext('2d'); 
-                        tempCtx.fillStyle = "#FFFFFF"; // Forzar fondo blanco
-                        tempCtx.fillRect(0, 0, cw, ch);
-                        tempCtx.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw, ch); 
-                        processLanguage(tempCanvas.toDataURL('image/png'), x, y, w, h); 
+                        tempCtx.fillStyle = "#FFFFFF"; 
+                        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                        tempCtx.drawImage(canvas, x, y, w, h, 0, 0, tempCanvas.width, tempCanvas.height); 
+                        let imgData = tempCanvas.toDataURL('image/jpeg', 0.8); // JPEG más ligero
+                    
+                        // 2. Borrar recuadro punteado
+                        ctx.putImageData(savedImage, 0, 0); 
+                        
+                        // 3. Dibujar HALO AZUL INMEDIATO
+                        ctx.save();
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.fillStyle = 'rgba(52, 152, 219, 0.3)'; // Azul semitransparente
+                        ctx.fillRect(x - 10, y - 10, w + 20, h + 20);
+                        ctx.restore();
+
+                        // 4. Procesar IA
+                        processLanguage(imgData, x, y, w, h); 
+                    } else {
+                        ctx.putImageData(savedImage, 0, 0);
                     }
-                    isLangMode = false; document.getElementById('aulaBabelBtn').classList.remove('active');
+                    isLangMode = false; 
+                    document.getElementById('aulaBabelBtn').classList.remove('active');
                 }
                 else { saveState(); }
                 ctx.closePath(); ctx.globalCompositeOperation='source-over';
@@ -330,51 +344,46 @@
         }
         canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointercancel', stopDraw);
 
-        // Aula Babel (OCR Local + IA Texto - Sistema Híbrido a prueba de fallos)
+        // Aula Babel (Con imagen comprimida)
         async function processLanguage(base64Image, x, y, w, h) {
             const notif = document.getElementById('arNotification');
-            notif.innerText = "🔍 Escaneando texto localmente...";
+            notif.innerText = "🌐 Aula Babel: Enviando a la IA...";
             notif.style.display = 'block';
-            
             try {
-                // 1. Leer texto con Tesseract.js (Local, 100% a prueba de fallos de red)
-                const result = await Tesseract.recognize(base64Image, 'eng+spa+por+fra', {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            notif.innerText = `🔍 Escaneando texto... ${Math.round(m.progress * 100)}%`;
-                        }
-                    }
+                const response = await fetch('https://text.pollinations.ai/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are an OCR API. Read the handwritten text. Respond ONLY with a valid JSON object: {"text": "corrected_text", "lang": "language", "translation": "spanish_translation_or_null"}. Do not add markdown.'
+                            },
+                            {
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: 'Read this.' },
+                                    { type: 'image_url', image_url: { url: base64Image } }
+                                ]
+                            }
+                        ]
+                    })
                 });
+                const data = await response.json();
+                let textResp = data.choices[0].message.content;
                 
-                let extractedText = result.data.text.trim();
+                textResp = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
                 
-                if (!extractedText || extractedText.length < 1) {
-                    throw new Error("No se detectó texto.");
-                }
-
-                notif.innerText = "🌐 Detectando idioma y traduciendo...";
-                
-                // 2. Usar la API de Texto (más estable) para traducir y formatear
-                const prompt = encodeURIComponent(`El texto leído fue: "${extractedText}". Determina el idioma (Español, Inglés, Portugués, Francés). Corrige cualquier error ortográfico evidente de la lectura. Si NO es Español, tradúcelo. Responde SOLO en formato JSON: {"text": "TEXTO_CORREGIDO", "lang": "Idioma", "translation": "Traducción o null si ya es español"}`);
-                
-                const r = await fetch(`https://text.pollinations.ai/${prompt}`);
-                let textResp = await r.text();
-                
-                let text = extractedText, lang = "Desconocido", translation = null;
-                
-                try {
-                    textResp = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
-                    let jsonMatch = textResp.match(/\{.*\}/s);
-                    if (jsonMatch) {
-                        let parsed = JSON.parse(jsonMatch[0]);
-                        text = parsed.text || extractedText;
-                        lang = parsed.lang || "Desconocido";
-                        translation = parsed.translation;
-                    } else {
-                        text = textResp; // Si la IA responde texto plano
-                    }
-                } catch (e) {
-                    text = textResp; // Fallback
+                let text = "No leído", lang = "Desconocido", translation = null;
+                let jsonMatch = textResp.match(/\{.*\}/s);
+                if (jsonMatch) {
+                    let parsed = JSON.parse(jsonMatch[0]);
+                    text = parsed.text || textResp;
+                    lang = parsed.lang || "Desconocido";
+                    translation = parsed.translation;
+                } else {
+                    text = textResp;
                 }
 
                 let speechLang = 'es-ES';
@@ -382,11 +391,8 @@
                 else if (lang.toLowerCase().includes('portug')) speechLang = 'pt-BR';
                 else if (lang.toLowerCase().includes('franc')) speechLang = 'fr-FR';
 
-                // Dibujar en pantalla
                 ctx.save();
                 ctx.globalCompositeOperation = 'source-over';
-                ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
-                ctx.fillRect(x - 15, y - 15, w + 30, h + 30);
                 
                 let fontSize = Math.max(16, Math.min(48, w / text.length * 1.8));
                 ctx.font = `bold ${fontSize}px Segoe UI`;
@@ -401,7 +407,6 @@
                 }
                 ctx.restore();
 
-                // Pronunciación nativa
                 let utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = speechLang;
                 utterance.rate = 0.9; 
@@ -411,7 +416,7 @@
                 setTimeout(() => { notif.style.display = 'none'; }, 4000);
 
             } catch(e) {
-                notif.innerText = "❌ No se pudo leer. Intenta escribir con letra imprenta más clara.";
+                notif.innerText = "❌ Error de conexión con la IA. Intenta de nuevo.";
                 setTimeout(() => { notif.style.display = 'none'; }, 5000);
             }
         }
@@ -447,7 +452,7 @@
                 document.getElementById('aiStatus').innerText = "Pensando...";
                 
                 try {
-                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve y conversacional, como un profesor de idiomas.")}`);
+                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve.")}`);
                     const txt = await r.text();
                     
                     document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${txt}</div>`;
