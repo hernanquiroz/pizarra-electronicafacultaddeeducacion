@@ -3,219 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pizarra Digital - UdeA - Ing. Hernán Quiroz</title>
-    <!-- Librería matemática para el graficador -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
+    <title>Aula Babel - UdeA - Ing. Hernán Quiroz</title>
     <style>
         :root {
-            --udea-green: #006633;
-            --udea-gold: #FFD700;
-            --bg-color: #1a1a1a;
-            --board-bg: #fafafa;
-            --toolbar-bg: #2c3e50;
-            --ai-color: #8e44ad;
-            --graph-color: #16a085;
+            --udea-green: #006633; --udea-gold: #FFD700; --bg-color: #1a1a1a;
+            --board-bg: #fafafa; --toolbar-bg: #2c3e50; --ai-color: #8e44ad;
         }
-
         html, body {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden;
-            background-color: var(--bg-color);
-            font-family: 'Segoe UI', sans-serif;
-            touch-action: none; 
-            overscroll-behavior: none;
-            user-select: none;
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif;
+            touch-action: none; overscroll-behavior: none; user-select: none;
         }
-
-        /* --- PANTALLA DE INICIO UdeA (1 MINUTO) --- */
         #splash {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--udea-green);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 1000; transition: opacity 2s ease-in-out;
+            background: var(--udea-green); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1000; transition: opacity 2s ease-in-out;
         }
-        
-        /* Efecto 3D + Latido de Corazón para el logo */
-        #splash img { 
-            width: 40vh; height: auto; margin-bottom: 4vh; 
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
-            animation: heartbeat3D 60s ease-in-out forwards;
-        }
+        #splash img { width: 40vh; height: auto; margin-bottom: 4vh; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); animation: heartbeat3D 60s ease-in-out forwards; }
         @keyframes heartbeat3D {
             0% { transform: perspective(1000px) translateZ(-800px) scale(0.3); opacity: 0; }
             8% { transform: perspective(1000px) translateZ(0) scale(1); opacity: 1; }
-            10% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
-            12% { transform: perspective(1000px) translateZ(10px) scale(1); }
-            14% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
-            16% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            10% { transform: perspective(1000px) translateZ(100px) scale(1.15); } 12% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            14% { transform: perspective(1000px) translateZ(100px) scale(1.15); } 16% { transform: perspective(1000px) translateZ(10px) scale(1); }
             20% { transform: perspective(1000px) rotateY(15deg) translateZ(50px) scale(1.05); }
-            25% { transform: perspective(1000px) rotateY(0) translateZ(100px) scale(1.15); }
-            27% { transform: perspective(1000px) translateZ(10px) scale(1); }
-            29% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
-            31% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            25% { transform: perspective(1000px) rotateY(0) translateZ(100px) scale(1.15); } 27% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            29% { transform: perspective(1000px) translateZ(100px) scale(1.15); } 31% { transform: perspective(1000px) translateZ(10px) scale(1); }
             40% { transform: perspective(1000px) rotateX(10deg) translateZ(50px) scale(1.05); }
-            50% { transform: perspective(1000px) rotateX(0) translateZ(100px) scale(1.15); }
-            52% { transform: perspective(1000px) translateZ(10px) scale(1); }
-            54% { transform: perspective(1000px) translateZ(100px) scale(1.15); }
-            56% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            50% { transform: perspective(1000px) rotateX(0) translateZ(100px) scale(1.15); } 52% { transform: perspective(1000px) translateZ(10px) scale(1); }
+            54% { transform: perspective(1000px) translateZ(100px) scale(1.15); } 56% { transform: perspective(1000px) translateZ(10px) scale(1); }
             70% { transform: perspective(1000px) rotateY(-10deg) translateZ(50px) scale(1.05); }
             80% { transform: perspective(1000px) rotateY(0) translateZ(0) scale(1); opacity: 1; }
             100% { transform: perspective(1000px) translateZ(-800px) scale(0.3); opacity: 0; }
         }
-
         #splash .credit { position: absolute; bottom: 5vh; color: #ecf0f1; font-size: 2.5vh; text-align: center; }
-
-        /* --- PROTECCIÓN ANTI-DEVTOOLS --- */
-        #securityBlock {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: #000; color: #fff; z-index: 9999;
-            display: none; align-items: center; justify-content: center;
-            font-size: 3vh; text-align: center; padding: 5vh;
-        }
-
-        /* --- APLICACIÓN PRINCIPAL --- */
+        #securityBlock { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; color: #fff; z-index: 9999; display: none; align-items: center; justify-content: center; font-size: 3vh; text-align: center; padding: 5vh; }
+        #deviceStatus { position: fixed; top: 2vh; left: 2vh; background: rgba(0,0,0,0.7); color: #fff; padding: 1vh 2vh; border-radius: 1vh; font-size: 1.5vh; z-index: 50; border: 2px solid var(--udea-gold); }
         #app { display: block; height: 100vh; width: 100vw; position: relative; }
-
-        #pizarra {
-            background-color: var(--board-bg);
-            touch-action: none; cursor: crosshair;
-            display: block; width: 100%; height: 100%;
-        }
-
-        /* --- NUEVOS MODOS DE VISUALIZACIÓN --- */
-        .grid-active {
-            background-image: 
-                linear-gradient(#888 1px, transparent 1px),
-                linear-gradient(90deg, #888 1px, transparent 1px) !important;
-            background-size: 1cm 1cm !important; 
-        }
-        .dark-mode-active {
-            background-color: #1e272e !important; 
-            background-image: none !important;
-        }
-        .dark-mode-active.grid-active {
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px) !important;
-        }
-
-        /* --- PERSIANA LATERAL (Corregida para no ocultar la flecha) --- */
-        #persiana {
-            position: fixed; right: 0; top: 0;
-            width: 25vh; min-width: 250px; height: 100vh;
-            background: var(--toolbar-bg);
-            transform: translateX(100%); 
-            transition: transform 0.3s ease; z-index: 100;
-            overflow: visible; 
-        }
+        #pizarra { background-color: var(--board-bg); touch-action: none; cursor: crosshair; display: block; width: 100%; height: 100%; }
+        .grid-active { background-image: linear-gradient(#888 1px, transparent 1px), linear-gradient(90deg, #888 1px, transparent 1px) !important; background-size: 1cm 1cm !important; }
+        .dark-mode-active { background-color: #1e272e !important; background-image: none !important; }
+        .dark-mode-active.grid-active { background-image: linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px) !important; }
+        
+        #persiana { position: fixed; right: 0; top: 0; width: 25vh; min-width: 250px; height: 100vh; background: var(--toolbar-bg); transform: translateX(100%); transition: transform 0.3s ease; z-index: 100; overflow: visible; }
         #persiana.open { transform: translateX(0); }
-
-        .persiana-content {
-            height: 100%; width: 100%;
-            display: flex; flex-direction: column;
-            padding: 2vh; gap: 3vh; box-sizing: border-box;
-            align-items: center; overflow-y: auto;
-        }
-        .persiana-content::-webkit-scrollbar { width: 8px; }
-        .persiana-content::-webkit-scrollbar-thumb { background: #7f8c8d; border-radius: 4px; }
-
-        #toggleArrow {
-            position: absolute; left: -6vh; top: 50%; transform: translateY(-50%);
-            width: 6vh; height: 12vh; background: var(--toolbar-bg);
-            border-radius: 15px 0 0 15px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 4vh; color: white;
-            box-shadow: -5px 0 5px rgba(0,0,0,0.3);
-        }
-
+        .persiana-content { height: 100%; width: 100%; display: flex; flex-direction: column; padding: 2vh; gap: 3vh; box-sizing: border-box; align-items: center; overflow-y: auto; }
+        .persiana-content::-webkit-scrollbar { width: 8px; } .persiana-content::-webkit-scrollbar-thumb { background: #7f8c8d; border-radius: 4px; }
+        #toggleArrow { position: absolute; left: -6vh; top: 50%; transform: translateY(-50%); width: 6vh; height: 12vh; background: var(--toolbar-bg); border-radius: 15px 0 0 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 4vh; color: white; box-shadow: -5px 0 5px rgba(0,0,0,0.3); }
         .tool-group { display: flex; flex-direction: column; gap: 1vh; align-items: center; width: 100%; }
         .tool-label { color: #ecf0f1; font-size: 1.8vh; text-transform: uppercase; }
-
         .colors { display: flex; gap: 1vh; justify-content: center; flex-wrap: wrap; }
         .color-btn { width: 5vh; height: 5vh; border-radius: 50%; border: 0.4vh solid #ecf0f1; cursor: pointer; }
         .color-btn.active { border-color: var(--udea-gold); transform: scale(1.1); }
-
         .sizes { display: flex; gap: 1vh; }
         .size-btn { background: #ecf0f1; border: none; border-radius: 1vh; width: 6vh; height: 6vh; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .size-btn.active { background: var(--udea-gold); }
-        .size-dot { background: #2c3e50; border-radius: 50%; }
-
-        /* Panel de Formas y Vectores */
+        .size-btn.active { background: var(--udea-gold); } .size-dot { background: #2c3e50; border-radius: 50%; }
         .shapes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1vh; width: 100%; }
         .shape-btn { background: #34495e; border: none; border-radius: 1vh; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 2.5vh; color: white; }
         .shape-btn.active { background: var(--udea-gold); color: #000; }
-
         .action-btn { width: 100%; padding: 1.5vh; font-size: 1.8vh; border: none; border-radius: 1vh; color: white; cursor: pointer; font-weight: bold; }
         #eraserBtn { background: #2980b9; } #eraserBtn.active { background: #e74c3c; }
         #clearBtn { background: #c0392b; }
         #fullscreenBtn { background: #27ae60; }
         #eyeCareBtn { background: #d35400; }
         #aiBtn { background: var(--ai-color); }
-        #graphBtn { background: var(--graph-color); }
         #webcamBtn { background: #2c3e50; }
         #gridBtn { background: #95a5a6; } #gridBtn.active { background: #7f8c8d; box-shadow: 0 0 10px white; }
         #darkBtn { background: #2c3e50; } #darkBtn.active { background: #34495e; box-shadow: 0 0 10px white; }
-        #aiVisionBtn { background: #9b59b6; } #aiVisionBtn.active { background: #8e44ad; box-shadow: 0 0 10px white; }
         #recordBtn { background: #e74c3c; } #recordBtn.recording { animation: rec-pulse 1.5s infinite; }
         @keyframes rec-pulse { 0% { background: #c0392b; } 50% { background: #e74c3c; } 100% { background: #c0392b; } }
-
+        #aulaBabelBtn { background: #3498db; } #aulaBabelBtn.active { background: #2980b9; box-shadow: 0 0 10px white; }
+        #uploadBtn { background: #16a085; } /* Nuevo botón carga */
+        
         .history-btns { display: flex; flex-direction: row; width: 100%; gap: 1vh; }
         .history-btns .action-btn { width: 50%; font-size: 3vh; padding: 1vh; }
         #undoBtn { background: #7f8c8d; } #redoBtn { background: #7f8c8d; }
-
         .credit-text { margin-top: auto; color: #7f8c8d; font-size: 1.5vh; text-align: center; padding-top: 2vh; }
-
-        /* --- VENTANAS MODALES (AI, GRAFICO, CAMARA) --- */
-        .modal {
-            display: none; position: fixed; top: 5vh; right: 5vh;
-            width: 40vw; height: 80vh; background: #222;
-            border: 0.5vh solid var(--udea-gold); border-radius: 1.5vh;
-            flex-direction: column; z-index: 200; overflow: hidden;
-        }
+        
+        .modal { display: none; position: fixed; top: 5vh; right: 5vh; width: 40vw; height: 80vh; background: #222; border: 0.5vh solid var(--udea-gold); border-radius: 1.5vh; flex-direction: column; z-index: 200; overflow: hidden; }
         .modal-header { padding: 1.5vh; display: flex; justify-content: space-between; color: white; font-size: 2vh; }
         .close-btn { background: transparent; border: none; color: white; font-size: 3vh; cursor: pointer; }
         .modal-content { flex-grow: 1; color: white; padding: 2vh; overflow-y: auto; font-size: 2vh; }
-
-        #aiWindow { border-color: var(--ai-color); }
-        #aiWindow .modal-header { background: var(--ai-color); }
-
-        #graphWindow { border-color: var(--graph-color); }
-        #graphWindow .modal-header { background: var(--graph-color); }
-
-        #webcamWindow { border-color: #2c3e50; }
-        #webcamWindow .modal-header { background: #2c3e50; }
-
+        #aiWindow { border-color: var(--ai-color); } #aiWindow .modal-header { background: var(--ai-color); }
+        #webcamWindow { border-color: #2c3e50; } #webcamWindow .modal-header { background: #2c3e50; }
         .mic-btn { background: #e74c3c; width: 10vh; height: 10vh; border-radius: 50%; border: 0.5vh solid white; margin: 2vh auto; cursor: pointer; font-size: 4vh; color: white; display: flex; align-items: center; justify-content: center; }
         .listening { animation: pulse 1s infinite; background: #2ecc71 !important; }
         @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 2vh rgba(46, 204, 113, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
         .status-text { text-align: center; color: #bbb; font-size: 1.5vh; margin-bottom: 1vh; }
-
-        #graphCanvas { background: #fff; width: 100%; height: 50vh; }
-        #equationDisplay { color: var(--graph-color); font-size: 2vh; text-align: center; padding: 1vh; background: #eee; }
-
         .eye-care-active { background-color: #f4e1c1 !important; }
+        
+        #arNotification { position: fixed; top: 8vh; left: 50%; transform: translateX(-50%); background: rgba(46, 204, 113, 0.9); color: white; padding: 2vh 4vh; border-radius: 1vh; font-size: 2vh; z-index: 150; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA INICIO UdeA -->
     <div id="splash">
         <img src="logo-udea.png" alt="UdeA">
         <div class="credit">Pizarra diseñada por Ing. Hernán Quiroz</div>
     </div>
 
-    <!-- BLOQUEO ANTI-INSPECCION -->
-    <div id="securityBlock">
-        Acceso No Autorizado. <br> Herramientas de desarrollador detectadas. <br> Cierre esta ventana para continuar.
-    </div>
+    <div id="deviceStatus">Esperando dispositivo...</div>
+    <div id="securityBlock">Acceso No Autorizado. <br> Herramientas de desarrollador detectadas. <br> Cierre esta ventana para continuar.</div>
+    <div id="arNotification"></div>
+    <input type="file" id="fileInput" accept="image/*" style="display: none;">
 
-    <!-- APP PRINCIPAL -->
     <div id="app">
         <canvas id="pizarra"></canvas>
         
         <div id="persiana">
             <div id="toggleArrow">◀</div>
-            
             <div class="persiana-content">
                 <div class="tool-group">
                     <div class="tool-label">Colores</div>
@@ -226,7 +121,6 @@
                         <div class="color-btn" style="background: #2ecc71;" data-color="#2ecc71"></div>
                     </div>
                 </div>
-
                 <div class="tool-group">
                     <div class="tool-label">Grosor</div>
                     <div class="sizes">
@@ -235,7 +129,6 @@
                         <button class="size-btn" data-size="18"><div class="size-dot" style="width:3vh;height:3vh;"></div></button>
                     </div>
                 </div>
-
                 <div class="tool-group">
                     <div class="tool-label">Formas y Vectores</div>
                     <div class="shapes-grid">
@@ -248,20 +141,21 @@
                         <button class="shape-btn" data-shape="axes" style="font-size: 1.5vh;">XYZ</button>
                     </div>
                 </div>
-
+                <div class="tool-group">
+                    <div class="tool-label">Taller de Lenguas</div>
+                    <button class="action-btn" id="aulaBabelBtn">Aula Babel (Lenguas)</button>
+                </div>
                 <div class="tool-group">
                     <div class="history-btns">
                         <button class="action-btn" id="undoBtn">↶</button>
                         <button class="action-btn" id="redoBtn">↷</button>
                     </div>
                 </div>
-
                 <div class="tool-group">
+                    <button class="action-btn" id="uploadBtn">📄 Cargar Imagen / Doc</button>
                     <button class="action-btn" id="eraserBtn">Borrador</button>
                     <button class="action-btn" id="clearBtn">Limpiar Pizarra</button>
-                    <button class="action-btn" id="graphBtn">Seleccionar y Graficar</button>
-                    <button class="action-btn" id="aiVisionBtn">Analizar Gráfica IA</button>
-                    <button class="action-btn" id="aiBtn">Asistente IA</button>
+                    <button class="action-btn" id="aiBtn">Asistente IA (Conversa)</button>
                     <button class="action-btn" id="recordBtn">⏺️ Grabar Clase</button>
                     <button class="action-btn" id="webcamBtn">Cámara Remotos</button>
                     <button class="action-btn" id="gridBtn">Cuadrícula (1cm)</button>
@@ -269,383 +163,166 @@
                     <button class="action-btn" id="eyeCareBtn">Modo Descanso</button>
                     <button class="action-btn" id="fullscreenBtn">Pantalla Completa</button>
                 </div>
-
                 <div class="credit-text">Pizarra diseñada por Ing. Hernán Quiroz</div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL IA -->
     <div id="aiWindow" class="modal">
-        <div class="modal-header"><span>Asistente IA</span><button class="close-btn" onclick="closeModal('aiWindow')">X</button></div>
-        <div id="aiContent" class="modal-content"><div class="ai-message">Hola, toca el micrófono y háblame. También puedo analizar gráficas si usas el botón 'Analizar Gráfica IA'.</div></div>
+        <div class="modal-header"><span>Asistente IA (Conversacional)</span><button class="close-btn" onclick="closeModal('aiWindow')">X</button></div>
+        <div id="aiContent" class="modal-content"><div class="ai-message">Hola, soy tu asistente conversacional. Toca el micrófono y habla conmigo para practicar. Te corregiré en tiempo real.</div></div>
         <div class="status-text" id="aiStatus">Toca el micro para hablar</div>
         <button class="mic-btn" id="aiMic">🎤</button>
     </div>
-
-    <!-- MODAL GRAFICADOR -->
-    <div id="graphWindow" class="modal">
-        <div class="modal-header"><span>Graficador Matemático</span><button class="close-btn" onclick="closeModal('graphWindow')">X</button></div>
-        <div id="equationDisplay">Dibuja un recuadro sobre tu ecuación y luego habla.</div>
-        <canvas id="graphCanvas"></canvas>
-        <div class="status-text" id="graphStatus">Toca el micro para decir la función</div>
-        <button class="mic-btn" id="graphMic" style="background: var(--graph-color);">🎤</button>
-    </div>
-
-    <!-- MODAL CAMARA WEB -->
     <div id="webcamWindow" class="modal">
         <div class="modal-header"><span>Cámara Remotos (Jitsi)</span><button class="close-btn" onclick="closeModal('webcamWindow')">X</button></div>
         <iframe id="jitsiFrame" style="width:100%; height:100%; border:none;" src=""></iframe>
     </div>
 
     <script>
-        // --- 1. SEGURIDAD Y BLOQUEO DEVTOOLS ---
+        // --- SEGURIDAD ANTI-COPIA ---
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('keydown', e => {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) {
-                e.preventDefault(); e.stopPropagation();
-                return false;
-            }
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) { e.preventDefault(); e.stopPropagation(); return false; }
         });
-        setInterval(function() {
-            const before = new Date();
-            debugger;
-            const after = new Date();
-            if (after - before > 100) { 
-                document.getElementById('securityBlock').style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-        }, 1000);
+        setInterval(function() { const before = new Date(); debugger; const after = new Date(); if (after - before > 100) { document.getElementById('securityBlock').style.display = 'flex'; document.body.style.overflow = 'hidden'; } }, 1000);
 
-        // --- 2. PANTALLA DE INICIO (1 MINUTO) Y PERSIANA ---
+        // --- INICIO UdeA Y PERSIANA ---
         setTimeout(() => {
             document.getElementById('splash').style.opacity = 0;
-            setTimeout(() => {
-                document.getElementById('splash').style.display = 'none';
-                togglePersiana(true); 
-                startVoiceCommands(); 
-            }, 2000);
-        }, 60000); 
+            setTimeout(() => { document.getElementById('splash').style.display = 'none'; togglePersiana(true); startVoiceCommands(); }, 2000);
+        }, 60000);
 
-        // --- 3. LÓGICA DE PIZARRA Y SELECCIÓN ---
         const canvas = document.getElementById('pizarra');
         const ctx = canvas.getContext('2d');
-        let currentColor = '#2c3e50', currentSize = 3, isEraser = false, isSelecting = false, isDrawing = false;
-        let currentShape = null, isSelectingForAI = false;
-        let startX = 0, startY = 0, savedImage = null;
+        let currentColor = '#2c3e50', currentSize = 3, isEraser = false, isDrawing = false;
+        let currentShape = null, isLangMode = false;
+        let startX = 0, startY = 0, savedImage = null, penIsDown = false;
 
-        // --- SISTEMA DE HISTORIAL (UNDO/REDO) ---
-        let history = [], redoStack = [];
-        const MAX_HISTORY = 20;
-
-        function saveState() {
-            redoStack = [];
-            if (history.length >= MAX_HISTORY) history.shift();
-            history.push(canvas.toDataURL());
+        function updateDeviceStatus(type) {
+            const el = document.getElementById('deviceStatus');
+            if (type === 'pen') { el.innerText = "✒️ Lápiz Genius Conectado"; el.style.borderColor = "#2ecc71"; }
+            else if (type === 'mouse') { el.innerText = "🖱️ Modo Mouse"; el.style.borderColor = "#3498db"; }
+            else if (type === 'touch') { el.innerText = "👆 Modo Táctil"; el.style.borderColor = "#e74c3c"; }
         }
 
-        function restoreState(dataURL) {
-            let img = new Image();
-            img.onload = function() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-            };
-            img.src = dataURL;
-        }
-
-        function undo() {
-            if (history.length > 1) {
-                redoStack.push(history.pop());
-                restoreState(history[history.length - 1]);
-            }
-        }
-
-        function redo() {
-            if (redoStack.length > 0) {
-                let state = redoStack.pop();
-                history.push(state);
-                restoreState(state);
-            }
-        }
-
+        let history = [], redoStack = []; const MAX_HISTORY = 20;
+        function saveState() { redoStack = []; if (history.length >= MAX_HISTORY) history.shift(); history.push(canvas.toDataURL()); }
+        function restoreState(dataURL) { let img = new Image(); img.onload = function() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); }; img.src = dataURL; }
+        function undo() { if (history.length > 1) { redoStack.push(history.pop()); restoreState(history[history.length - 1]); } }
+        function redo() { if (redoStack.length > 0) { let state = redoStack.pop(); history.push(state); restoreState(state); } }
         document.getElementById('undoBtn').addEventListener('pointerup', undo);
         document.getElementById('redoBtn').addEventListener('pointerup', redo);
 
-        function resizeCanvas() {
-            const p = document.getElementById('app').getBoundingClientRect();
-            canvas.width = p.width; canvas.height = p.height;
-            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            history = []; redoStack = [];
-            saveState();
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        function resizeCanvas() { const p = document.getElementById('app').getBoundingClientRect(); canvas.width = p.width; canvas.height = p.height; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; history = []; redoStack = []; saveState(); }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-        function togglePersiana(forceOpen) {
-            const p = document.getElementById('persiana');
-            if (forceOpen === true) p.classList.add('open');
-            else if (forceOpen === false) p.classList.remove('open');
-            else p.classList.toggle('open');
-            document.getElementById('toggleArrow').innerText = p.classList.contains('open') ? '▶' : '◀';
-        }
+        function togglePersiana(forceOpen) { const p = document.getElementById('persiana'); if (forceOpen === true) p.classList.add('open'); else if (forceOpen === false) p.classList.remove('open'); else p.classList.toggle('open'); document.getElementById('toggleArrow').innerText = p.classList.contains('open') ? '▶' : '◀'; }
         document.getElementById('toggleArrow').addEventListener('pointerdown', () => togglePersiana());
 
-        // Tool Listeners
-        document.querySelectorAll('.color-btn').forEach(b => {
-            b.addEventListener('pointerup', () => {
-                document.querySelectorAll('.color-btn').forEach(x => x.classList.remove('active'));
-                b.classList.add('active'); currentColor = b.dataset.color; isEraser = false; isSelecting = false; currentShape = null; isSelectingForAI = false;
-                document.getElementById('eraserBtn').classList.remove('active');
-                document.getElementById('graphBtn').classList.remove('active');
-                document.getElementById('aiVisionBtn').classList.remove('active');
-                document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active'));
-            });
-        });
-        document.querySelectorAll('.size-btn').forEach(b => {
-            b.addEventListener('pointerup', () => {
-                document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('active'));
-                b.classList.add('active'); currentSize = parseInt(b.dataset.size);
-            });
-        });
-        document.querySelectorAll('.shape-btn').forEach(b => {
-            b.addEventListener('pointerup', () => {
-                document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active'));
-                b.classList.add('active');
-                currentShape = b.dataset.shape; isEraser = false; isSelecting = false; isSelectingForAI = false;
-                document.getElementById('eraserBtn').classList.remove('active');
-                document.getElementById('graphBtn').classList.remove('active');
-                document.getElementById('aiVisionBtn').classList.remove('active');
-            });
-        });
-
-        document.getElementById('eraserBtn').addEventListener('pointerup', e => { isEraser = !isEraser; isSelecting=false; currentShape=null; isSelectingForAI=false; e.target.classList.toggle('active', isEraser); document.getElementById('graphBtn').classList.remove('active'); document.getElementById('aiVisionBtn').classList.remove('active'); document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active')); });
+        function clearToolStates() { 
+            isEraser=false; currentShape=null; isLangMode=false;
+            document.getElementById('eraserBtn').classList.remove('active'); 
+            document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active')); 
+            document.getElementById('aulaBabelBtn').classList.remove('active'); 
+        }
+        document.querySelectorAll('.color-btn').forEach(b => b.addEventListener('pointerup', () => { document.querySelectorAll('.color-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); currentColor = b.dataset.color; clearToolStates(); }));
+        document.querySelectorAll('.size-btn').forEach(b => b.addEventListener('pointerup', () => { document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); currentSize = parseInt(b.dataset.size); }));
+        document.querySelectorAll('.shape-btn').forEach(b => b.addEventListener('pointerup', () => { document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); currentShape = b.dataset.shape; clearToolStates(); }));
+        
+        document.getElementById('eraserBtn').addEventListener('pointerup', e => { clearToolStates(); isEraser = !isEraser; e.target.classList.toggle('active', isEraser); });
         document.getElementById('clearBtn').addEventListener('pointerup', () => { ctx.clearRect(0,0,canvas.width,canvas.height); saveState(); });
         document.getElementById('eyeCareBtn').addEventListener('pointerup', () => canvas.classList.toggle('eye-care-active'));
-        document.getElementById('fullscreenBtn').addEventListener('pointerup', () => {
-            if(!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        });
-        document.getElementById('graphBtn').addEventListener('pointerup', e => {
-            isSelecting = !isSelecting; isEraser = false; currentShape = null; isSelectingForAI = false;
-            e.target.classList.toggle('active', isSelecting);
-            document.getElementById('eraserBtn').classList.remove('active');
-            document.getElementById('aiVisionBtn').classList.remove('active');
-            document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active'));
-        });
-        
-        // NUEVO: Botón Analizar IA
-        document.getElementById('aiVisionBtn').addEventListener('pointerup', e => {
-            isSelectingForAI = !isSelectingForAI; isEraser = false; currentShape = null; isSelecting = false;
-            e.target.classList.toggle('active', isSelectingForAI);
-            document.getElementById('eraserBtn').classList.remove('active');
-            document.getElementById('graphBtn').classList.remove('active');
-            document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active'));
+        document.getElementById('fullscreenBtn').addEventListener('pointerup', () => { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); });
+        document.getElementById('aulaBabelBtn').addEventListener('pointerup', e => { clearToolStates(); isLangMode = !isLangMode; e.target.classList.toggle('active', isLangMode); });
+
+        // Cargar Documentos / Imágenes
+        document.getElementById('uploadBtn').addEventListener('pointerup', () => document.getElementById('fileInput').click());
+        document.getElementById('fileInput').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    // Ajustar imagen al centro del canvas
+                    let hRatio = canvas.width / img.width;
+                    let vRatio = canvas.height / img.height;
+                    let ratio = Math.min(hRatio, vRatio);
+                    let centerShift_x = (canvas.width - img.width * ratio) / 2;
+                    let centerShift_y = (canvas.height - img.height * ratio) / 2;
+                    ctx.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
+                    saveState();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = ''; // Limpiar input para poder subir el mismo otra vez
         });
 
         document.getElementById('aiBtn').addEventListener('pointerup', () => openModal('aiWindow'));
-        document.getElementById('webcamBtn').addEventListener('pointerup', () => {
-            document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA_Facultad_de_Educacion";
-            openModal('webcamWindow');
-        });
+        document.getElementById('webcamBtn').addEventListener('pointerup', () => { document.getElementById('jitsiFrame').src = "https://meet.jit.si/UdeA_Facultad_de_Educacion"; openModal('webcamWindow'); });
+        document.getElementById('gridBtn').addEventListener('pointerup', e => { canvas.classList.toggle('grid-active'); e.target.classList.toggle('active'); });
+        document.getElementById('darkBtn').addEventListener('pointerup', e => { canvas.classList.toggle('dark-mode-active'); e.target.classList.toggle('active'); if (canvas.classList.contains('dark-mode-active')) { currentColor = '#FFFFFF'; document.querySelectorAll('.color-btn').forEach(x => x.classList.remove('active')); } else { currentColor = '#2c3e50'; document.querySelector('.color-btn[data-color="#2c3e50"]').classList.add('active'); } });
 
-        // NUEVOS MODOS
-        document.getElementById('gridBtn').addEventListener('pointerup', e => {
-            canvas.classList.toggle('grid-active');
-            e.target.classList.toggle('active');
-        });
-        document.getElementById('darkBtn').addEventListener('pointerup', e => {
-            canvas.classList.toggle('dark-mode-active');
-            e.target.classList.toggle('active');
-            if (canvas.classList.contains('dark-mode-active')) {
-                currentColor = '#FFFFFF'; 
-                document.querySelectorAll('.color-btn').forEach(x => x.classList.remove('active'));
-            } else {
-                currentColor = '#2c3e50';
-                document.querySelector('.color-btn[data-color="#2c3e50"]').classList.add('active');
-            }
-        });
-
-        // NUEVO: Grabación de Clase
         let mediaRecorder; let chunks = []; let isRecording = false;
         document.getElementById('recordBtn').addEventListener('pointerup', async () => {
             const btn = document.getElementById('recordBtn');
             if (!isRecording) {
-                try {
-                    const stream = canvas.captureStream(30);
-                    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioStream.getAudioTracks().forEach(track => stream.addTrack(track));
-                    
-                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                    chunks = [];
-                    mediaRecorder.ondataavailable = e => chunks.push(e.data);
-                    mediaRecorder.onstop = e => {
-                        const blob = new Blob(chunks, { type: 'video/webm' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'Clase_UdeA_Ing_Hernan_Quiroz.webm';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    };
-                    mediaRecorder.start();
-                    isRecording = true;
-                    btn.classList.add('recording');
-                    btn.innerText = "⏹️ Detener Grab.";
-                } catch (err) { alert("No se pudo acceder al micrófono para grabar la clase."); }
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                btn.classList.remove('recording');
-                btn.innerText = "⏺️ Grabar Clase";
-            }
+                try { const stream = canvas.captureStream(30); const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true }); audioStream.getAudioTracks().forEach(track => stream.addTrack(track)); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data); mediaRecorder.onstop = e => { const blob = new Blob(chunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Clase_Idiomas_UdeA.webm'; a.click(); URL.revokeObjectURL(url); }; mediaRecorder.start(); isRecording = true; btn.classList.add('recording'); btn.innerText = "⏹️ Detener Grab."; } catch (err) { alert("No se pudo acceder al micrófono para grabar la clase."); }
+            } else { mediaRecorder.stop(); isRecording = false; btn.classList.remove('recording'); btn.innerText = "⏺️ Grabar Clase"; }
         });
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        // Función para dibujar flechas y ejes
-        function drawArrow(x1, y1, x2, y2) {
-            const headlen = 15;
-            const angle = Math.atan2(y2 - y1, x2 - x1);
-            ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI/6), y2 - headlen * Math.sin(angle - Math.PI/6));
-            ctx.moveTo(x2, y2);
-            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI/6), y2 - headlen * Math.sin(angle + Math.PI/6));
-            ctx.stroke();
-        }
+        function drawArrow(x1, y1, x2, y2) { const headlen = 15; const angle = Math.atan2(y2 - y1, x2 - x1); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI/6), y2 - headlen * Math.sin(angle - Math.PI/6)); ctx.moveTo(x2, y2); ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI/6), y2 - headlen * Math.sin(angle + Math.PI/6)); ctx.stroke(); }
+        function drawShape(shape, x1, y1, x2, y2) { ctx.strokeStyle = currentColor; ctx.fillStyle = currentColor; ctx.lineWidth = currentSize; ctx.globalCompositeOperation = 'source-over'; ctx.beginPath(); if (shape === 'line') { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); } else if (shape === 'arrow') { drawArrow(x1, y1, x2, y2); } else if (shape === 'segment') { ctx.setLineDash([10, 10]); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(x1, y1, 4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x2, y2, 4, 0, Math.PI*2); ctx.fill(); } else if (shape === 'rect') { ctx.strokeRect(x1, y1, x2 - x1, y2 - y1); } else if (shape === 'circle') { const radius = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)); ctx.arc(x1, y1, radius, 0, 2 * Math.PI); ctx.stroke(); } else if (shape === 'triangle') { ctx.moveTo(x1, y2); ctx.lineTo(x2, y2); ctx.lineTo((x1+x2)/2, y1); ctx.closePath(); ctx.stroke(); } else if (shape === 'axes') { drawArrow(x1, y1, x2, y1); drawArrow(x1, y1, x1, y2); drawArrow(x1, y1, (x1+x2)/2, (y1+y2)/2); } }
 
-        function drawShape(shape, x1, y1, x2, y2) {
-            ctx.strokeStyle = currentColor;
-            ctx.fillStyle = currentColor;
-            ctx.lineWidth = currentSize;
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.beginPath();
-
-            if (shape === 'line') {
-                ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-            } else if (shape === 'arrow') {
-                drawArrow(x1, y1, x2, y2);
-            } else if (shape === 'segment') {
-                ctx.setLineDash([10, 10]);
-                ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.beginPath(); ctx.arc(x1, y1, 4, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(x2, y2, 4, 0, Math.PI*2); ctx.fill();
-            } else if (shape === 'rect') {
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-            } else if (shape === 'circle') {
-                const radius = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-                ctx.arc(x1, y1, radius, 0, 2 * Math.PI); ctx.stroke();
-            } else if (shape === 'triangle') {
-                ctx.moveTo(x1, y2); ctx.lineTo(x2, y2); ctx.lineTo((x1+x2)/2, y1); ctx.closePath(); ctx.stroke();
-            } else if (shape === 'axes') {
-                drawArrow(x1, y1, x2, y1);
-                drawArrow(x1, y1, x1, y2);
-                drawArrow(x1, y1, (x1+x2)/2, (y1+y2)/2);
-            }
-        }
-
-        // Drawing Logic
         function getPos(e) { const r = canvas.getBoundingClientRect(); return {x: e.clientX-r.left, y: e.clientY-r.top}; }
+        
         canvas.addEventListener('pointerdown', e => {
+            updateDeviceStatus(e.pointerType); if (e.pointerType === 'pen') penIsDown = true;
+            if (e.pointerType === 'touch' && penIsDown) { e.preventDefault(); return; }
             e.preventDefault(); canvas.setPointerCapture(e.pointerId); isDrawing = true;
             const p = getPos(e); startX = p.x; startY = p.y;
-            if(isSelecting || currentShape || isSelectingForAI) {
-                savedImage = ctx.getImageData(0,0,canvas.width,canvas.height);
-            } else {
-                ctx.beginPath(); ctx.moveTo(startX, startY);
-            }
+            if(currentShape || isLangMode) { savedImage = ctx.getImageData(0,0,canvas.width,canvas.height); }
+            else { ctx.beginPath(); ctx.moveTo(startX, startY); }
         });
         canvas.addEventListener('pointermove', e => {
+            if (e.pointerType === 'touch' && penIsDown) return;
             if(!isDrawing) return; e.preventDefault(); const p = getPos(e);
-            
-            if(currentShape && savedImage) {
-                ctx.putImageData(savedImage, 0, 0);
-                drawShape(currentShape, startX, startY, p.x, p.y);
-            } else if ((isSelecting || isSelectingForAI) && savedImage) {
-                ctx.putImageData(savedImage, 0, 0);
-                ctx.strokeStyle = isSelectingForAI ? '#9b59b6' : '#16a085'; 
-                ctx.lineWidth = 2; ctx.setLineDash([10,10]);
-                ctx.strokeRect(startX, startY, p.x-startX, p.y-startY); ctx.setLineDash([]);
-            } else {
-                if(isEraser){ ctx.globalCompositeOperation='destination-out'; ctx.lineWidth=currentSize*4; }
-                else { ctx.globalCompositeOperation='source-over'; ctx.strokeStyle=currentColor; ctx.lineWidth=currentSize; }
-                ctx.lineTo(p.x, p.y); ctx.stroke();
-            }
+            if(currentShape && savedImage) { ctx.putImageData(savedImage, 0, 0); drawShape(currentShape, startX, startY, p.x, p.y); }
+            else if (isLangMode && savedImage) { ctx.putImageData(savedImage, 0, 0); ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2; ctx.setLineDash([10,10]); ctx.strokeRect(startX, startY, p.x-startX, p.y-startY); ctx.setLineDash([]); }
+            else { if(isEraser){ ctx.globalCompositeOperation='destination-out'; ctx.lineWidth=currentSize*4; } else { ctx.globalCompositeOperation='source-over'; ctx.strokeStyle=currentColor; ctx.lineWidth=currentSize; } ctx.lineTo(p.x, p.y); ctx.stroke(); }
         });
         function stopDraw(e) {
+            if (e.pointerType === 'pen') penIsDown = false;
+            if (e.pointerType === 'touch' && penIsDown) return;
             if(isDrawing) {
                 isDrawing = false;
                 const p = getPos(e);
-                if(isSelecting && savedImage) {
-                    ctx.putImageData(savedImage, 0, 0); openModal('graphWindow'); drawGraph('x^2');
-                    isSelecting = false; document.getElementById('graphBtn').classList.remove('active');
-                } else if (isSelectingForAI && savedImage) {
-                    ctx.putImageData(savedImage, 0, 0);
-                    let x = Math.min(startX, p.x);
-                    let y = Math.min(startY, p.y);
-                    let w = Math.abs(p.x - startX);
-                    let h = Math.abs(p.y - startY);
-                    if (w > 10 && h > 10) {
-                        let tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = w; tempCanvas.height = h;
-                        let tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(canvas, x, y, w, h, 0, 0, w, h);
-                        sendImageToAI(tempCanvas.toDataURL('image/png'));
-                    }
-                    isSelectingForAI = false;
-                    document.getElementById('aiVisionBtn').classList.remove('active');
-                } else {
-                    saveState();
+                const notif = document.getElementById('arNotification');
+                
+                if (isLangMode && savedImage) {
+                    ctx.putImageData(savedImage, 0, 0); 
+                    let x = Math.min(startX, p.x); let y = Math.min(startY, p.y); let w = Math.abs(p.x - startX); let h = Math.abs(p.y - startY);
+                    if (w > 10 && h > 10) { let tempCanvas = document.createElement('canvas'); tempCanvas.width = w; tempCanvas.height = h; let tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage(canvas, x, y, w, h, 0, 0, w, h); processLanguage(tempCanvas.toDataURL('image/png'), x, y, w, h); }
+                    isLangMode = false; document.getElementById('aulaBabelBtn').classList.remove('active');
                 }
+                else { saveState(); }
                 ctx.closePath(); ctx.globalCompositeOperation='source-over';
             }
         }
         canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointercancel', stopDraw);
 
-        // --- 4. GRAFICADOR ---
-        function drawGraph(eqStr) {
-            const g = document.getElementById('graphCanvas'); const c = g.getContext('2d');
-            g.width = g.offsetWidth; g.height = g.offsetHeight; c.clearRect(0,0,g.width,g.height);
-            c.strokeStyle='#333'; c.lineWidth=2; c.beginPath();
-            c.moveTo(0,g.height/2); c.lineTo(g.width,g.height/2); c.moveTo(g.width/2,0); c.lineTo(g.width/2,g.height); c.stroke();
+        // Aula Babel
+        async function processLanguage(base64Image, x, y, w, h) {
+            const notif = document.getElementById('arNotification');
+            notif.innerText = "🌐 Aula Babel: Leyendo texto y detectando idioma...";
+            notif.style.display = 'block';
             try {
-                let eq = eqStr.replace(/^y\s*=\s*/i,'').trim();
-                document.getElementById('equationDisplay').innerText = "Graficando: y = " + eq;
-                c.strokeStyle = '#e74c3c'; c.lineWidth=3; c.beginPath();
-                let first = true; let scale = 30;
-                for(let x=-20; x<=20; x+=0.1) {
-                    let y = math.evaluate(eq, {x:x});
-                    let px = g.width/2 + (x*scale); let py = g.height/2 - (y*scale);
-                    if(first){c.moveTo(px,py); first=false;} else c.lineTo(px,py);
-                }
-                c.stroke();
-            } catch(err) { document.getElementById('equationDisplay').innerText = "Error: Función no válida."; }
-        }
-
-        // --- 5. VOZ Y IA ---
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        function setupMic(btnId, recognition, onResult, statusId) {
-            let listening = false;
-            const btn = document.getElementById(btnId);
-            btn.addEventListener('pointerup', () => {
-                if(listening){ recognition.stop(); return; }
-                recognition.start(); listening=true;
-                btn.classList.add('listening'); btn.innerText="⏹️";
-                document.getElementById(statusId).innerText="Escuchando...";
-            });
-            recognition.onresult = e => { const t = e.results[0][0].transcript; onResult(t); };
-            recognition.onend = () => { listening=false; btn.classList.remove('listening'); btn.innerText="🎤"; document.getElementById(statusId).innerText="Toca el micro para hablar"; };
-            recognition.onerror = e => { document.getElementById(statusId).innerText = "Error: "+e.error; listening=false; btn.classList.remove('listening'); btn.innerText="🎤"; };
-        }
-
-        // NUEVO: Enviar imagen a IA de Visión
-        async function sendImageToAI(base64Image) {
-            openModal('aiWindow');
-            document.getElementById('aiContent').innerHTML += `<div class="user-message">Tú: [Enviaste una gráfica para analizar]</div>`;
-            document.getElementById('aiStatus').innerText = "Analizando imagen...";
-            try {
-                // Usamos el endpoint compatible con OpenAI de Pollinations
                 const response = await fetch('https://text.pollinations.ai/openai', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -655,7 +332,7 @@
                             {
                                 role: 'user',
                                 content: [
-                                    { type: 'text', text: 'Analiza la gráfica, diagrama o ecuación en esta imagen. Explícalo en español de forma breve.' },
+                                    { type: 'text', text: 'Eres el núcleo del Aula Babel. Lee el texto manuscrito en la imagen (puede ser una palabra o una oración completa). Identifica el idioma (Español, Inglés, Portugués o Francés). Corrige la ortografía y gramática. Si NO es Español, tradúcela al Español. Responde SOLO en formato JSON: {"text": "TEXTO_CORREGIDO", "lang": "Idioma", "translation": "Traducción o null si ya es español"}' },
                                     { type: 'image_url', image_url: { url: base64Image } }
                                 ]
                             }
@@ -663,51 +340,138 @@
                     })
                 });
                 const data = await response.json();
-                const text = data.choices[0].message.content;
-                document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${text}</div>`;
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-                document.getElementById('aiStatus').innerText = "Toca el micro para hablar";
+                let textResp = data.choices[0].message.content;
+                let jsonMatch = textResp.match(/\{.*\}/s);
+                let parsed = JSON.parse(jsonMatch[0]);
+                let text = parsed.text;
+                let lang = parsed.lang;
+                let translation = parsed.translation;
+
+                let speechLang = 'es-ES';
+                if (lang.toLowerCase().includes('ingl')) speechLang = 'en-US';
+                else if (lang.toLowerCase().includes('portug')) speechLang = 'pt-BR';
+                else if (lang.toLowerCase().includes('franc')) speechLang = 'fr-FR';
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
+                ctx.fillRect(x - 15, y - 15, w + 30, h + 30);
+                
+                let fontSize = Math.max(16, Math.min(48, w / text.length * 1.8));
+                ctx.font = `bold ${fontSize}px Segoe UI`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#c0392b'; 
+                ctx.fillText(text, x + w/2, y - fontSize - 5);
+                
+                if (translation && translation !== "null" && translation !== null) {
+                    ctx.font = `italic ${fontSize * 0.8}px Segoe UI`;
+                    ctx.fillStyle = '#2c3e50'; 
+                    ctx.fillText(translation, x + w/2, y + h + fontSize * 0.8 + 15);
+                }
+                ctx.restore();
+
+                let utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = speechLang;
+                utterance.rate = 0.9; 
+                window.speechSynthesis.speak(utterance);
+
+                notif.innerText = `🔊 Aula Babel: Pronunciando en ${lang}...`;
+                setTimeout(() => { notif.style.display = 'none'; }, 4000);
+
             } catch(e) {
-                document.getElementById('aiStatus').innerText = "Error al conectar con la IA de visión.";
+                notif.innerText = "❌ No se pudo leer el texto. Intenta con letra más clara.";
+                setTimeout(() => { notif.style.display = 'none'; }, 4000);
             }
         }
 
-        if(SR) {
-            // IA Asistente
-            const recAI = new SR(); recAI.lang='es-ES';
-            setupMic('aiMic', recAI, async (t) => {
-                document.getElementById('aiContent').innerHTML += `<div class="user-message">Tú: ${t}</div>`;
-                try { const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(t)}`); const txt = await r.text();
-                    document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${txt}</div>`;
-                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(txt));
-                } catch(e){}
-            }, 'aiStatus');
+        // Asistente IA Conversacional (Anti-Eco)
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let aiRecognition = null;
+        let isAISpeaking = false;
 
-            // Graficador
-            const recGraph = new SR(); recGraph.lang='es-ES';
-            setupMic('graphMic', recGraph, (t) => {
-                let eq = t.toLowerCase().replace(/equis al cuadrado/g,'x^2').replace(/al cuadrado/g,'^2').replace(/equis/g,'x').replace(/por/g,'*').replace(/entre/g,'/').replace(/más/g,'+').replace(/menos/g,'-');
-                drawGraph(eq);
-            }, 'graphStatus');
+        if (SR) {
+            aiRecognition = new SR();
+            aiRecognition.lang = 'es-ES'; // Puedes cambiarlo si quieres que entienda inglés por defecto
+            aiRecognition.continuous = false;
+            aiRecognition.interimResults = false;
+
+            const aiMic = document.getElementById('aiMic');
+            aiMic.addEventListener('pointerup', () => {
+                if (aiMic.classList.contains('listening')) {
+                    aiRecognition.stop();
+                    return;
+                }
+                try {
+                    aiRecognition.start();
+                    aiMic.classList.add('listening');
+                    aiMic.innerText = "⏹️";
+                    document.getElementById('aiStatus').innerText = "Escuchando...";
+                } catch(e) { console.error(e); }
+            });
+
+            aiRecognition.onresult = async (e) => {
+                const transcript = e.results[0][0].transcript;
+                document.getElementById('aiContent').innerHTML += `<div class="user-message">Tú: ${transcript}</div>`;
+                document.getElementById('aiStatus').innerText = "Pensando...";
+                
+                try {
+                    // Usar Pollinations para respuesta conversacional
+                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve y conversacional, como un profesor de idiomas.")}`);
+                    const txt = await r.text();
+                    
+                    document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${txt}</div>`;
+                    document.getElementById('aiStatus').innerText = "Hablando...";
+
+                    // Anti-Eco: Detener reconocimiento mientras habla
+                    isAISpeaking = true;
+                    let utterance = new SpeechSynthesisUtterance(txt);
+                    utterance.lang = 'es-ES';
+                    utterance.onend = () => {
+                        isAISpeaking = false;
+                        document.getElementById('aiStatus').innerText = "Toca el micro para hablar";
+                    };
+                    window.speechSynthesis.speak(utterance);
+
+                } catch(err) {
+                    document.getElementById('aiStatus').innerText = "Error de conexión.";
+                }
+            };
+
+            aiRecognition.onerror = (e) => {
+                document.getElementById('aiStatus').innerText = "Error de micrófono: " + e.error;
+                aiMic.classList.remove('listening');
+                aiMic.innerText = "🎤";
+                isAISpeaking = false;
+            };
+
+            aiRecognition.onend = () => {
+                if (!isAISpeaking) {
+                    aiMic.classList.remove('listening');
+                    aiMic.innerText = "🎤";
+                    if (document.getElementById('aiStatus').innerText === "Hablando...") return;
+                    document.getElementById('aiStatus').innerText = "Toca el micro para hablar";
+                }
+            };
+        } else {
+            alert("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
         }
 
         function startVoiceCommands() {
             if(!SR) return;
-            const rec = new SR(); rec.lang='es-ES'; rec.continuous = true; rec.interimResults = true;
-            let isCmdActive = false;
-            rec.onresult = e => {
-                const transcript = Array.from(e.results).map(r => r[0].transcript).join('').toLowerCase();
-                if(transcript.includes('computadora')) isCmdActive = true;
-                
-                if(isCmdActive) {
-                    if(transcript.includes('abrir menú') || transcript.includes('desplegar menú')) { togglePersiana(true); isCmdActive=false; }
-                    if(transcript.includes('cerrar menú') || transcript.includes('plegar menú')) { togglePersiana(false); isCmdActive=false; }
-                    if(transcript.includes('limpiar pizarra')) { ctx.clearRect(0,0,canvas.width,canvas.height); isCmdActive=false; }
-                    if(transcript.includes('pantalla completa')) { document.documentElement.requestFullscreen(); isCmdActive=false; }
-                }
-            };
-            rec.onend = () => { if(document.getElementById('securityBlock').style.display !== 'flex') rec.start(); };
-            rec.start();
+            const rec = new SR(); rec.lang='es-ES'; rec.continuous = true; rec.interimResults = true; 
+            let isCmdActive = false; 
+            rec.onresult = e => { 
+                const transcript = Array.from(e.results).map(r => r[0].transcript).join('').toLowerCase(); 
+                if(transcript.includes('computadora')) isCmdActive = true; 
+                if(isCmdActive) { 
+                    if(transcript.includes('abrir menú') || transcript.includes('desplegar menú')) { togglePersiana(true); isCmdActive=false; } 
+                    if(transcript.includes('cerrar menú') || transcript.includes('plegar menú')) { togglePersiana(false); isCmdActive=false; } 
+                    if(transcript.includes('limpiar pizarra')) { ctx.clearRect(0,0,canvas.width,canvas.height); isCmdActive=false; } 
+                    if(transcript.includes('pantalla completa')) { document.documentElement.requestFullscreen(); isCmdActive=false; } 
+                } 
+            }; 
+            rec.onend = () => { if(document.getElementById('securityBlock').style.display !== 'flex') rec.start(); }; 
+            rec.start(); 
         }
     </script>
 </body>
