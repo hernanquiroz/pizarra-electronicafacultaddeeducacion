@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aula Babel - UdeA - Ing. Hernán Quiroz</title>
-    <!-- Motor OCR Local a prueba de fallos -->
+    <!-- OCR Local de respaldo -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root {
@@ -189,6 +189,10 @@
         });
         setInterval(function() { const before = new Date(); debugger; const after = new Date(); if (after - before > 100) { document.getElementById('securityBlock').style.display = 'flex'; document.body.style.overflow = 'hidden'; } }, 1000);
 
+        // Calentar motor de voz de Chrome (Fix para pronunciación muda)
+        window.speechSynthesis.getVoices(); 
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+
         // --- INICIO UdeA Y PERSIANA ---
         setTimeout(() => {
             document.getElementById('splash').style.opacity = 0;
@@ -308,9 +312,9 @@
                     let w = Math.abs(p.x - startX); let h = Math.abs(p.y - startY);
                     
                     if (w > 10 && h > 10) { 
-                        // 1. Capturar y comprimir
+                        // Comprimir imagen a 400px ancho, JPEG ligero
                         let tempCanvas = document.createElement('canvas'); 
-                        let maxW = 800;
+                        let maxW = 400;
                         let scale = maxW / w;
                         if (w < maxW) scale = 1;
                         tempCanvas.width = w * scale; 
@@ -319,19 +323,17 @@
                         tempCtx.fillStyle = "#FFFFFF"; 
                         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
                         tempCtx.drawImage(canvas, x, y, w, h, 0, 0, tempCanvas.width, tempCanvas.height); 
-                        let imgData = tempCanvas.toDataURL('image/png');
+                        let imgData = tempCanvas.toDataURL('image/jpeg', 0.7); 
                     
-                        // 2. Borrar recuadro punteado
                         ctx.putImageData(savedImage, 0, 0); 
                         
-                        // 3. Dibujar HALO AZUL INMEDIATO
+                        // Dibujar HALO AZUL INMEDIATO
                         ctx.save();
                         ctx.globalCompositeOperation = 'source-over';
                         ctx.fillStyle = 'rgba(52, 152, 219, 0.3)'; 
                         ctx.fillRect(x - 10, y - 10, w + 20, h + 20);
                         ctx.restore();
 
-                        // 4. Procesar
                         processLanguage(imgData, x, y, w, h); 
                     } else {
                         ctx.putImageData(savedImage, 0, 0);
@@ -345,89 +347,127 @@
         }
         canvas.addEventListener('pointerup', stopDraw); canvas.addEventListener('pointercancel', stopDraw);
 
-        // AULA BABEL: Híbrido (OCR Local + IA Texto)
+        // SISTEMA HÍBRIDO DE 3 CAPAS (Intensified Reasoning)
         async function processLanguage(base64Image, x, y, w, h) {
             const notif = document.getElementById('arNotification');
-            notif.innerText = "🔍 Escaneando texto localmente...";
+            notif.innerText = "🌐 IA de Visión escaneando...";
             notif.style.display = 'block';
             
+            let extractedText = "";
+            let lang = "Desconocido";
+            let translation = null;
+
             try {
-                // 1. Leer con Tesseract.js (100% local, sin internet)
-                const worker = await Tesseract.createWorker(['eng', 'spa', 'por', 'fra'], 1, {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            notif.innerText = `🔍 Escaneando... ${Math.round(m.progress * 100)}%`;
-                        }
-                    }
+                // CAPA 1: OpenAI Vision API (Excelente para handwriting)
+                const response = await fetch('https://text.pollinations.ai/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a handwriting OCR API. Read the handwritten text. Determine language (Spanish, English, Portuguese, French). Correct spelling. Translate to Spanish if not Spanish. Respond ONLY with a valid JSON object: {"text":"corrected_text", "lang":"language", "translation":"spanish_or_null"}. No markdown.'
+                            },
+                            {
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: 'Read this.' },
+                                    { type: 'image_url', image_url: { url: base64Image } }
+                                ]
+                            }
+                        ]
+                    })
                 });
-                const ret = await worker.recognize(base64Image);
-                await worker.terminate();
                 
-                let extractedText = ret.data.text.trim();
+                if (!response.ok) throw new Error("API Vision Error");
+                const data = await response.json();
+                let textResp = data.choices[0].message.content;
+                textResp = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
                 
-                if (!extractedText || extractedText.length < 1) {
-                    throw new Error("Texto no detectado");
+                let jsonMatch = textResp.match(/\{.*\}/s);
+                if (jsonMatch) {
+                    let parsed = JSON.parse(jsonMatch[0]);
+                    extractedText = parsed.text || "";
+                    lang = parsed.lang || "Desconocido";
+                    translation = parsed.translation;
+                } else {
+                    extractedText = textResp; // Fallback si responde texto plano
                 }
 
-                notif.innerText = "🌐 Traduciendo...";
-                
-                // 2. Pedir traducción y idioma a la API de texto (mucho más rápida)
-                const prompt = encodeURIComponent(`El texto escaneado es: "${extractedText}". Determina el idioma (Español, Inglés, Portugués, Francés). Corrige cualquier error ortográfico. Si no es Español, tradúcelo. Responde SOLO en formato JSON: {"text": "TEXTO_CORREGIDO", "lang": "Idioma", "translation": "Traducción o null si ya es español"}`);
-                
-                const r = await fetch(`https://text.pollinations.ai/${prompt}`);
-                let textResp = await r.text();
-                
-                let text = extractedText, lang = "Desconocido", translation = null;
-                
+                if (!extractedText) throw new Error("No text extracted");
+
+            } catch (e) {
+                // CAPA 2: Tesseract.js (Fallback Local si internet falla)
+                notif.innerText = "🔍 IA de Visión caída. Escaneando localmente...";
                 try {
+                    const worker = await Tesseract.createWorker(['eng', 'spa'], 1, {
+                        logger: m => { if(m.status === 'recognizing text') notif.innerText = `🔍 Escaneando local... ${Math.round(m.progress*100)}%`; }
+                    });
+                    const ret = await worker.recognize(base64Image);
+                    await worker.terminate();
+                    extractedText = ret.data.text.trim();
+                    
+                    if (!extractedText) throw new Error("Local OCR failed");
+                    
+                    // Pedir traducción a API de texto (rápida)
+                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(`Text: "${extractedText}". Detect language (Spanish, English, Portuguese, French). Correct spelling. Translate to Spanish if not. Respond ONLY JSON: {"text":"...", "lang":"...", "translation":"..." or null}`)}`);
+                    let textResp = await r.text();
                     textResp = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
                     let jsonMatch = textResp.match(/\{.*\}/s);
                     if (jsonMatch) {
                         let parsed = JSON.parse(jsonMatch[0]);
-                        text = parsed.text || extractedText;
+                        extractedText = parsed.text || extractedText;
                         lang = parsed.lang || "Desconocido";
                         translation = parsed.translation;
-                    } else {
-                        text = textResp;
                     }
-                } catch (e) {
-                    text = textResp;
+                } catch (err) {
+                    notif.innerText = "❌ No se pudo leer. Intenta con letra imprenta más clara.";
+                    setTimeout(() => { notif.style.display = 'none'; }, 5000);
+                    return;
                 }
-
-                let speechLang = 'es-ES';
-                if (lang.toLowerCase().includes('ingl')) speechLang = 'en-US';
-                else if (lang.toLowerCase().includes('portug')) speechLang = 'pt-BR';
-                else if (lang.toLowerCase().includes('franc')) speechLang = 'fr-FR';
-
-                // Dibujar en pantalla
-                ctx.save();
-                ctx.globalCompositeOperation = 'source-over';
-                let fontSize = Math.max(16, Math.min(48, w / text.length * 1.8));
-                ctx.font = `bold ${fontSize}px Segoe UI`;
-                ctx.textAlign = 'center';
-                ctx.fillStyle = '#c0392b'; 
-                ctx.fillText(text, x + w/2, y - fontSize - 5);
-                
-                if (translation && translation !== "null" && translation !== null) {
-                    ctx.font = `italic ${fontSize * 0.8}px Segoe UI`;
-                    ctx.fillStyle = '#2c3e50'; 
-                    ctx.fillText(translation, x + w/2, y + h + fontSize * 0.8 + 15);
-                }
-                ctx.restore();
-
-                // Pronunciación nativa
-                let utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = speechLang;
-                utterance.rate = 0.9; 
-                window.speechSynthesis.speak(utterance);
-
-                notif.innerText = `🔊 Aula Babel: ${text} (${lang})`;
-                setTimeout(() => { notif.style.display = 'none'; }, 4000);
-
-            } catch(e) {
-                notif.innerText = "❌ No se pudo leer. Intenta con letra imprenta más clara.";
-                setTimeout(() => { notif.style.display = 'none'; }, 5000);
             }
+
+            // ÉXITO: Dibujar y Hablar
+            let speechLang = 'es-ES';
+            if (lang.toLowerCase().includes('ingl')) speechLang = 'en-US';
+            else if (lang.toLowerCase().includes('portug')) speechLang = 'pt-BR';
+            else if (lang.toLowerCase().includes('franc')) speechLang = 'fr-FR';
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            let fontSize = Math.max(16, Math.min(48, w / extractedText.length * 1.8));
+            ctx.font = `bold ${fontSize}px Segoe UI`;
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#c0392b'; 
+            ctx.fillText(extractedText, x + w/2, y - fontSize - 5);
+            
+            if (translation && translation !== "null" && translation !== null) {
+                ctx.font = `italic ${fontSize * 0.8}px Segoe UI`;
+                ctx.fillStyle = '#2c3e50'; 
+                ctx.fillText(translation, x + w/2, y + h + fontSize * 0.8 + 15);
+            }
+            ctx.restore();
+
+            notif.innerText = `🔊 Aula Babel: ${extractedText} (${lang}) - Pronunciando...`;
+            
+            // CAPA 3: Pronunciación Blindada
+            window.speechSynthesis.cancel(); 
+            let voices = window.speechSynthesis.getVoices();
+            let utterance = new SpeechSynthesisUtterance(extractedText);
+            utterance.lang = speechLang;
+            utterance.rate = 0.9;
+            utterance.onerror = () => {
+                notif.innerText = "❌ Error de audio. Revisa parlantes.";
+                setTimeout(() => { notif.style.display = 'none'; }, 4000);
+            };
+            
+            let selectedVoice = voices.find(v => v.lang === speechLang);
+            if (selectedVoice) utterance.voice = selectedVoice;
+            
+            window.speechSynthesis.speak(utterance);
+
+            setTimeout(() => { notif.style.display = 'none'; }, 4000);
         }
 
         // Asistente IA Conversacional (Anti-Eco Corregido)
@@ -443,7 +483,6 @@
 
             const aiMic = document.getElementById('aiMic');
             aiMic.addEventListener('pointerup', () => {
-                // Cancelar cualquier audio atascado para desbloquear el mic
                 window.speechSynthesis.cancel();
                 isAISpeaking = false;
 
@@ -458,7 +497,7 @@
                     aiMic.innerText = "⏹️";
                     document.getElementById('aiStatus').innerText = "Escuchando...";
                 } catch(e) {
-                    document.getElementById('aiStatus').innerText = "Error: Permiso de micrófono denegado o en uso.";
+                    document.getElementById('aiStatus').innerText = "Error: Permiso de micrófono denegado.";
                     aiMic.classList.remove('listening');
                     aiMic.innerText = "🎤";
                 }
@@ -470,7 +509,7 @@
                 document.getElementById('aiStatus').innerText = "Pensando...";
                 
                 try {
-                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve y conversacional.")}`);
+                    const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(transcript + ". Responde de forma breve.")}`);
                     const txt = await r.text();
                     
                     document.getElementById('aiContent').innerHTML += `<div class="ai-message">IA: ${txt}</div>`;
@@ -488,14 +527,14 @@
                     window.speechSynthesis.speak(utterance);
 
                 } catch(err) {
-                    document.getElementById('aiStatus').innerText = "Error de conexión con la IA.";
+                    document.getElementById('aiStatus').innerText = "Error de conexión.";
                     aiMic.classList.remove('listening');
                     aiMic.innerText = "🎤";
                 }
             };
 
             aiRecognition.onerror = (e) => {
-                document.getElementById('aiStatus').innerText = "Error de micrófono: " + e.error;
+                document.getElementById('aiStatus').innerText = "Error de micrófono.";
                 aiMic.classList.remove('listening');
                 aiMic.innerText = "🎤";
                 isAISpeaking = false;
